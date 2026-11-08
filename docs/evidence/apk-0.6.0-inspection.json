@@ -1,7 +1,7 @@
 {
   "apk": "SlinkTV-0.6.0.apk",
-  "bytes": 82474075,
-  "sha256": "2993d8829457cb7cda91346daf3bfcffd0a1ecb3109b2d7eeced60efd770f711",
+  "bytes": 82474179,
+  "sha256": "1b85aa48e651ad57f874c0adca8efd41c2e214cd5be21c948304763cf6abb732",
   "abis": [
     "arm64-v8a",
     "armeabi-v7a",

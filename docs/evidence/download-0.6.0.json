@@ -1,6 +1,6 @@
 {
   "url": "http://192.168.1.218:8765/app.apk?v=0.6.0",
-  "size": 82474075,
-  "sha256": "2993d8829457cb7cda91346daf3bfcffd0a1ecb3109b2d7eeced60efd770f711",
+  "size": 82474179,
+  "sha256": "1b85aa48e651ad57f874c0adca8efd41c2e214cd5be21c948304763cf6abb732",
   "matches_packaged_apk": true
 }
