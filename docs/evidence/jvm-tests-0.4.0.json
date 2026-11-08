@@ -1,0 +1,85 @@
+{
+  "tests": 99,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "suites": [
+    {
+      "name": "tv.slink.app.AuthViewModelTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:24:10.727Z"
+    },
+    {
+      "name": "tv.slink.app.ChatLogTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:24:11.046Z"
+    },
+    {
+      "name": "tv.slink.app.ChatPresentationTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:23:55.354Z"
+    },
+    {
+      "name": "tv.slink.app.ChatRenderingTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:24:11.137Z"
+    },
+    {
+      "name": "tv.slink.app.LoginActivityTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:24:11.248Z"
+    },
+    {
+      "name": "tv.slink.app.PlaybackQualityTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:24:11.553Z"
+    },
+    {
+      "name": "tv.slink.app.PlayerActivityTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:24:11.628Z"
+    },
+    {
+      "name": "tv.slink.app.StreamWallTest",
+      "tests": "19",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:24:13.445Z"
+    },
+    {
+      "name": "tv.slink.app.TwitchApiTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:24:15.458Z"
+    },
+    {
+      "name": "tv.slink.app.TwitchChatTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:24:15.690Z"
+    },
+    {
+      "name": "tv.slink.app.WatchHistoryTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:24:15.827Z"
+    }
+  ]
+}

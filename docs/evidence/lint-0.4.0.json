@@ -1,0 +1,15 @@
+{
+  "severity": {
+    "Warning": 40
+  },
+  "issues": {
+    "GradleDependency": 7,
+    "NewerVersionAvailable": 4,
+    "DiscouragedApi": 3,
+    "DataExtractionRules": 1,
+    "NotifyDataSetChanged": 4,
+    "IconMissingDensityFolder": 1,
+    "ViewConstructor": 1,
+    "SetTextI18n": 19
+  }
+}

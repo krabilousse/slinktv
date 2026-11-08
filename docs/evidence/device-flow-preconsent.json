@@ -1,0 +1,9 @@
+{
+  "device_http_status": 200,
+  "verification_host": "www.twitch.tv",
+  "expires_in": 1800,
+  "interval": 5,
+  "poll_http_status": 400,
+  "authorization_pending": true,
+  "consent_completed": false
+}

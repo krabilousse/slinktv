@@ -1,0 +1,99 @@
+{
+  "tests": 111,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "suites": [
+    {
+      "name": "tv.slink.app.AuthViewModelTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:56:11.511Z"
+    },
+    {
+      "name": "tv.slink.app.ChatLogTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:56:13.971Z"
+    },
+    {
+      "name": "tv.slink.app.ChatPresentationTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:56:14.195Z"
+    },
+    {
+      "name": "tv.slink.app.ChatRenderingTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:56:27.382Z"
+    },
+    {
+      "name": "tv.slink.app.LoginActivityTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:56:27.490Z"
+    },
+    {
+      "name": "tv.slink.app.PlaybackQualityTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:56:27.796Z"
+    },
+    {
+      "name": "tv.slink.app.PlayerActivityTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:56:27.870Z"
+    },
+    {
+      "name": "tv.slink.app.StreamWallTest",
+      "tests": "19",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:56:29.706Z"
+    },
+    {
+      "name": "tv.slink.app.TwitchApiTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:56:31.754Z"
+    },
+    {
+      "name": "tv.slink.app.TwitchChatTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:56:31.980Z"
+    },
+    {
+      "name": "tv.slink.app.VideoFeatureTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:56:32.125Z"
+    },
+    {
+      "name": "tv.slink.app.VideosScreenTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:56:32.736Z"
+    },
+    {
+      "name": "tv.slink.app.WatchHistoryTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-11-08T11:56:35.064Z"
+    }
+  ]
+}

@@ -1,0 +1,143 @@
+package tv.slink.app;
+
+import android.os.Looper;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.ListView;
+import androidx.activity.ComponentActivity;
+import androidx.recyclerview.widget.RecyclerView;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.Shadows;
+import org.robolectric.annotation.Config;
+import org.robolectric.annotation.GraphicsMode;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BooleanSupplier;
+import static org.junit.Assert.*;
+
+@RunWith(RobolectricTestRunner.class) @Config(sdk=34,qualifiers="w960dp-h540dp-land-xhdpi")
+public class VideosScreenTest {
+    static class Service implements TwitchApi.Transport {
+        final int follows;
+        final List<String> videos=new CopyOnWriteArrayList<>();
+        boolean limited;
+        java.util.Set<String> live=java.util.Set.of();
+        Service(int follows){this.follows=follows;}
+        @Override public TwitchApi.Reply request(String method,String url,Map<String,String> headers,String form)throws Exception{
+            JSONObject result=new JSONObject().put("data",new JSONArray()).put("pagination",new JSONObject());
+            if(url.endsWith("validate"))return new TwitchApi.Reply(200,new JSONObject().put("client_id","client").put("user_id","42").put("login","viewer").put("scopes",new JSONArray().put("user:read:follows")),0);
+            if(url.contains("channels/followed"))result.put("data",VideoFeatureTest.follows(follows));
+            if(url.contains("streams/followed")){JSONArray rows=new JSONArray();for(String id:live)rows.put(new JSONObject().put("user_id",id));result.put("data",rows);}
+            if(url.contains("/videos?")){
+                videos.add(url);if(limited&&videos.size()==2)return new TwitchApi.Reply(429,new JSONObject(),120);
+                String channel=url.split("user_id=")[1].split("&")[0];
+                String id=""+(Long.parseLong(channel)*100+(url.contains("after=")?2:1));
+                JSONObject video=VideoFeatureTest.video(id,channel,"2026-11-08T10:00:00Z");video.put("thumbnail_url","");
+                result.put("data",new JSONArray().put(video));
+                if(url.contains("first=25")&&!url.contains("after="))result.put("pagination",new JSONObject().put("cursor","older"));
+            }
+            return new TwitchApi.Reply(200,result,0);
+        }
+    }
+    private AuthViewModel account(Service service)throws Exception{
+        SessionStore store=new SessionStore(){
+            public TwitchApi.Session load(){return new TwitchApi.Session("client","test-access","test-refresh",System.currentTimeMillis()+3_600_000);}
+            public void save(TwitchApi.Session session){}public void clear(){}
+        };
+        AuthViewModel account=new AuthViewModel(RuntimeEnvironment.getApplication(),new TwitchApi(service),store);
+        await(()->account.state().getValue() instanceof AuthViewModel.Ready);return account;
+    }
+    private void await(BooleanSupplier condition)throws Exception{
+        long end=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+        while(System.nanoTime()<end){Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250));if(condition.getAsBoolean())return;Thread.sleep(3);}
+        fail("Timed out waiting for UI state");
+    }
+    private RecyclerView grid(View root){if(root instanceof RecyclerView list)return list;if(root instanceof ViewGroup group)for(int i=0;i<group.getChildCount();i++){RecyclerView list=grid(group.getChildAt(i));if(list!=null)return list;}return null;}
+    private ListView list(View root){if(root instanceof ListView list)return list;if(root instanceof ViewGroup group)for(int i=0;i<group.getChildCount();i++){ListView list=list(group.getChildAt(i));if(list!=null)return list;}return null;}
+    @Test public void discoveryStopsAtTenAndLoadMoreAddsTenWithoutDuplicates()throws Exception{
+        Service service=new Service(70);service.live=java.util.Set.of("1","2","3");AuthViewModel account=account(service);
+        try(var activity=Robolectric.buildActivity(ComponentActivity.class).setup()){
+            VideosScreen screen=new VideosScreen(activity.get(),account,()->{});
+            try{
+                View root=screen.show(((AuthViewModel.Ready)account.state().getValue()).snapshot());activity.get().setContentView(root);
+                await(()->grid(root).getAdapter().getItemCount()==10&&VideoFeatureTest.button(root,"Load more").isEnabled());
+                assertEquals(10,grid(root).getAdapter().getItemCount());VideoFeatureTest.button(root,"Load more").performClick();
+                await(()->grid(root).getAdapter().getItemCount()==20);
+                assertEquals(20,service.videos.size());assertEquals(20,new java.util.HashSet<>(service.videos).size());
+                assertTrue(service.videos.stream().allMatch(url->url.contains("first=1")));
+                assertTrue(service.videos.stream().noneMatch(url->service.live.contains(url.split("user_id=")[1].split("&")[0])));
+            }finally{screen.destroy();}
+        }finally{account.onCleared();}
+    }
+    @Test public void channelPickerCanFetchOlderPagesAndLogoutRemovesTheCatalog()throws Exception{
+        Service service=new Service(3);AuthViewModel account=account(service);
+        try(var activity=Robolectric.buildActivity(ComponentActivity.class).setup()){
+            VideosScreen screen=new VideosScreen(activity.get(),account,()->{});
+            try{
+                View root=screen.show(((AuthViewModel.Ready)account.state().getValue()).snapshot());activity.get().setContentView(root);
+                await(()->service.videos.size()==3&&!VideoFeatureTest.button(root,"Load more").isEnabled());
+                VideoFeatureTest.button(root,"Channels").performClick();
+                var dialog=org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();ListView channels=list(dialog.getWindow().getDecorView());assertEquals(3,channels.getCount());
+                channels.performItemClick(null,0,0);
+                await(()->VideoFeatureTest.button(root,"Older videos").isEnabled());
+                assertEquals(1,grid(root).getAdapter().getItemCount());VideoFeatureTest.button(root,"Older videos").performClick();
+                await(()->grid(root).getAdapter().getItemCount()==2);
+                assertTrue(service.videos.get(service.videos.size()-1).contains("after=older"));
+                screen.updateAccount(null);screen.resume();assertNull(grid(root));assertNotNull(VideoFeatureTest.button(root,"Sign in with QR"));
+                Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2));assertNull(grid(root));
+            }finally{screen.destroy();}
+        }finally{account.onCleared();}
+    }
+    @Test public void rateLimitRetainsKnownCardsAndStopsFurtherRequests()throws Exception{
+        Service service=new Service(3);service.limited=true;AuthViewModel account=account(service);
+        try(var activity=Robolectric.buildActivity(ComponentActivity.class).setup()){
+            VideosScreen screen=new VideosScreen(activity.get(),account,()->{});
+            try{
+                View root=screen.show(((AuthViewModel.Ready)account.state().getValue()).snapshot());activity.get().setContentView(root);
+                await(()->service.videos.size()==2&&VideoFeatureTest.button(root,"Load more").isEnabled());
+                assertEquals(1,grid(root).getAdapter().getItemCount());VideoFeatureTest.button(root,"Load more").performClick();
+                Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(5));assertEquals(2,service.videos.size());
+            }finally{screen.destroy();}
+        }finally{account.onCleared();}
+    }
+    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    public void videoWallFitsTvAndFocusReturnsToTheSameVideo()throws Exception{
+        Service service=new Service(6);AuthViewModel account=account(service);
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().setInTouchMode(false);
+        try(var activity=Robolectric.buildActivity(ComponentActivity.class).setup()){
+            VideosScreen screen=new VideosScreen(activity.get(),account,()->{});
+            try{
+                View content=screen.show(((AuthViewModel.Ready)account.state().getValue()).snapshot());
+                FrameLayout root=new FrameLayout(activity.get());root.setBackgroundColor(TvUi.BACKGROUND);root.setPadding(64,32,64,16);root.addView(content);activity.get().setContentView(root);
+                await(()->grid(root).getAdapter().getItemCount()==6&&!VideoFeatureTest.button(root,"Load more").isEnabled());
+                layout(root);
+                RecyclerView cards=grid(root);assertEquals(6,cards.getChildCount());
+                for(int i=0;i<cards.getChildCount();i++){
+                    var holder=(VideoCards.Holder)cards.getChildViewHolder(cards.getChildAt(i));
+                    String file=i%2==0?"zelda.jpg":"hades.jpg";
+                    holder.image.setImageDrawable(android.graphics.drawable.Drawable.createFromPath("../docs/prototypes/assets/"+file));
+                    assertTrue(holder.itemView.getBottom()<=cards.getHeight());
+                }
+                assertTrue(VideoFeatureTest.button(root,"Load more").getRight()<=((View)VideoFeatureTest.button(root,"Load more").getParent()).getWidth());
+                cards.getChildAt(1).requestFocus();long id=cards.getChildViewHolder(cards.getChildAt(1)).getItemId();
+                screen.hide();screen.resume();layout(root);
+                assertEquals(id,cards.getChildViewHolder(cards.getFocusedChild()).getItemId());
+                capture(root,"videos-wall-0.6.0.png");
+            }finally{screen.destroy();}
+        }finally{account.onCleared();}
+    }
+    static void layout(View root){root.measure(View.MeasureSpec.makeMeasureSpec(1920,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(1080,View.MeasureSpec.EXACTLY));root.layout(0,0,1920,1080);root.getViewTreeObserver().dispatchOnPreDraw();}
+    static void capture(View root,String name)throws Exception{
+        var bitmap=android.graphics.Bitmap.createBitmap(1920,1080,android.graphics.Bitmap.Config.ARGB_8888);root.draw(new android.graphics.Canvas(bitmap));
+        var path=java.nio.file.Path.of("build/reports/ui/"+name);java.nio.file.Files.createDirectories(path.getParent());try(var output=java.nio.file.Files.newOutputStream(path)){bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,output);}bitmap.recycle();
+    }
+}

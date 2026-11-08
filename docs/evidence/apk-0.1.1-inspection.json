@@ -1,0 +1,24 @@
+{
+  "apk": "SlinkTV-0.1.1-debug.apk",
+  "bytes": 90245428,
+  "sha256": "c55f945a41a155bbff9de8d57ad7f6f02302a15e41a33a5989b599f9a2763c6c",
+  "abis": [
+    "arm64-v8a",
+    "armeabi-v7a",
+    "x86_64"
+  ],
+  "native_libraries": 356,
+  "below_16kb_alignment": {
+    "lib/armeabi-v7a/libchaquopy_java.so": 4096,
+    "assets/chaquopy/bootstrap-native/armeabi-v7a/java/chaquopy.so": 4096,
+    "assets/chaquopy/requirements-arm64-v8a.imy!/chaquopy/lib/libexslt.so": 4096,
+    "assets/chaquopy/requirements-arm64-v8a.imy!/chaquopy/lib/libxml2.so": 4096,
+    "assets/chaquopy/requirements-arm64-v8a.imy!/chaquopy/lib/libxslt.so": 4096,
+    "assets/chaquopy/requirements-armeabi-v7a.imy!/chaquopy/lib/libexslt.so": 4096,
+    "assets/chaquopy/requirements-armeabi-v7a.imy!/chaquopy/lib/libxml2.so": 4096,
+    "assets/chaquopy/requirements-armeabi-v7a.imy!/chaquopy/lib/libxslt.so": 4096,
+    "assets/chaquopy/requirements-x86_64.imy!/chaquopy/lib/libexslt.so": 4096,
+    "assets/chaquopy/requirements-x86_64.imy!/chaquopy/lib/libxml2.so": 4096,
+    "assets/chaquopy/requirements-x86_64.imy!/chaquopy/lib/libxslt.so": 4096
+  }
+}

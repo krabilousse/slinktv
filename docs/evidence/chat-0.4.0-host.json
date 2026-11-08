@@ -1,0 +1,26 @@
+{
+  "checked_at": "2026-11-08T11:21:22.943024+00:00",
+  "authenticated_chat_tested": false,
+  "eventsub": {
+    "welcome_received": true,
+    "keepalive_seconds": 30
+  },
+  "7tv": {
+    "global_emotes": 45,
+    "linkus7_emotes": 384
+  },
+  "cdn_assets": [
+    {
+      "name": "Clap",
+      "bytes": 3492,
+      "webp_header": true,
+      "animation_chunk": true
+    },
+    {
+      "name": "7Cinema",
+      "bytes": 5296,
+      "webp_header": true,
+      "animation_chunk": false
+    }
+  ]
+}

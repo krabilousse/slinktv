@@ -1,0 +1,15 @@
+.gradle/
+.tools/
+.venv/
+**/build/
+local.properties
+*.pyc
+__pycache__/
+.pytest_cache/
+dist/
+.idea/
+*.jks
+*.keystore
+*.p12
+*.env
+release-state.json

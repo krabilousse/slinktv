@@ -1,0 +1,10 @@
+{
+  "tests": 126,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 2,
+  "skips": [
+    "tv.slink.app.PrivateUpdateProbeTest.publishedPrivateReleaseDownloadsThroughTheActualUpdater",
+    "tv.slink.app.UpdateClientTest.fileProviderExposesOnlyTheUpdateDirectory"
+  ]
+}

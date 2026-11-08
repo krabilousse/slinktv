@@ -1,0 +1,8 @@
+{
+  "url": "http://192.168.1.218:8765/app.apk?v=0.2.0",
+  "status": 200,
+  "content_type": "application/vnd.android.package-archive",
+  "bytes": 81927234,
+  "sha256": "5c197897e74672634568d0f5823c20a561a181f8d6fee72eb8af84250d19f97c",
+  "matches_packaged_apk": true
+}

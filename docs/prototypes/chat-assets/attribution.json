@@ -1,0 +1,87 @@
+[
+  {
+    "name": "PETPET",
+    "id": "01FE3XY508000AA32JP519W2EW",
+    "owner": "YamadaAoi",
+    "url": "https://cdn.7tv.app/emote/01FE3XY508000AA32JP519W2EW/2x.webp",
+    "page": "https://7tv.app/emotes/01FE3XY508000AA32JP519W2EW",
+    "flags": 256,
+    "file": {
+      "name": "2x.webp",
+      "static_name": "2x_static.webp",
+      "width": 64,
+      "height": 64,
+      "frame_count": 5,
+      "size": 7780,
+      "format": "WEBP"
+    }
+  },
+  {
+    "name": "Clap",
+    "id": "01GAM8EFQ00004MXFXAJYKA859",
+    "owner": "sunkhaskasis",
+    "url": "https://cdn.7tv.app/emote/01GAM8EFQ00004MXFXAJYKA859/2x.webp",
+    "page": "https://7tv.app/emotes/01GAM8EFQ00004MXFXAJYKA859",
+    "flags": 0,
+    "file": {
+      "name": "2x.webp",
+      "static_name": "2x_static.webp",
+      "width": 44,
+      "height": 64,
+      "frame_count": 2,
+      "size": 3492,
+      "format": "WEBP"
+    }
+  },
+  {
+    "name": "peepoHappy",
+    "id": "01GAZ199Z8000FEWHS6AT5QZV0",
+    "owner": "TrippyColour",
+    "url": "https://cdn.7tv.app/emote/01GAZ199Z8000FEWHS6AT5QZV0/2x.webp",
+    "page": "https://7tv.app/emotes/01GAZ199Z8000FEWHS6AT5QZV0",
+    "flags": 0,
+    "file": {
+      "name": "2x.webp",
+      "static_name": "2x.webp",
+      "width": 64,
+      "height": 64,
+      "frame_count": 1,
+      "size": 2966,
+      "format": "WEBP"
+    }
+  },
+  {
+    "name": "PartyParrot",
+    "id": "01FKSDK14G0008TM5NY9QEG0QV",
+    "owner": "not supplied",
+    "url": "https://cdn.7tv.app/emote/01FKSDK14G0008TM5NY9QEG0QV/2x.webp",
+    "page": "https://7tv.app/emotes/01FKSDK14G0008TM5NY9QEG0QV",
+    "flags": 0,
+    "file": {
+      "name": "2x.webp",
+      "static_name": "2x_static.webp",
+      "width": 64,
+      "height": 64,
+      "frame_count": 10,
+      "size": 13982,
+      "format": "WEBP"
+    }
+  },
+  {
+    "name": "7Cinema",
+    "id": "01GBFDVP18000CRDCG0DV7KEMY",
+    "owner": "Oxidoc",
+    "url": "https://cdn.7tv.app/emote/01GBFDVP18000CRDCG0DV7KEMY/2x.webp",
+    "page": "https://7tv.app/emotes/01GBFDVP18000CRDCG0DV7KEMY",
+    "flags": 0,
+    "file": {
+      "name": "2x.webp",
+      "static_name": "2x.webp",
+      "width": 170,
+      "height": 64,
+      "frame_count": 1,
+      "size": 5296,
+      "format": "WEBP"
+    }
+  }
+]

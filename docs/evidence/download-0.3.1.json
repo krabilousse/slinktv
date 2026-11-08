@@ -1,0 +1,13 @@
+{
+  "checked_at": "2026-11-08T10:44:36.973317+00:00",
+  "url": "http://192.168.1.218:8765/app.apk?v=0.3.1",
+  "bytes": 84240020,
+  "sha256": "63f3ae11265de60847e6f6d554bcf224b00bc26204b1394e8635cdf1f0f54814",
+  "matches_packaged_apk": true,
+  "headers": {
+    "Content-Type": "application/vnd.android.package-archive",
+    "Content-Length": "84240020",
+    "Cache-Control": "no-store",
+    "Content-Disposition": "attachment; filename=\"SlinkTV.apk\""
+  }
+}
