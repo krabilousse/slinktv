@@ -1,6 +1,7 @@
 """On-device Streamlink resolution. Media3 owns HLS loading and decoding."""
 import json
 import re
+import time
 from urllib.parse import urlsplit
 
 from streamlink import Streamlink
@@ -11,6 +12,7 @@ from streamlink.stream.hls import HLSStream
 DEMO_URL = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
 PROXY_QUERY = "allow_source=true&allow_audio_only=true&fast_bread=true&include_unavailable=true&supported_codecs=h264"
 PROXY_TIMEOUT = 4.0
+PROXY_BUDGET = 12.0
 last_proxy = None
 
 
@@ -65,8 +67,11 @@ def resolve_proxied(channel, templates):
     start = templates.index(last_proxy) if last_proxy in templates else 0
     session = new_session(PROXY_TIMEOUT)
     session.http.headers.update({"Referer": "https://player.twitch.tv", "Origin": "https://player.twitch.tv"})
+    deadline = time.monotonic() + PROXY_BUDGET
     try:
         for template in templates[start:] + templates[:start]:
+            if time.monotonic() >= deadline:
+                return None
             url = template.replace("$channel", channel)
             try:
                 streams = TwitchHLSStream.parse_variant_playlist(session, url + ("&" if "?" in url else "?") + PROXY_QUERY, name_key="name", check_streams=True)

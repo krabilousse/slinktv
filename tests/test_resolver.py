@@ -156,6 +156,17 @@ def test_when_every_proxy_fails_playback_falls_back_to_twitch_directly():
     assert result["variants"][0]["url"] == "https://example.com/720.m3u8"
 
 
+def test_proxy_attempts_stop_after_the_overall_budget_and_play_directly():
+    proxy, calls = fake_proxies({"good.example"})
+    clock = iter(range(0, 100, 5))
+    with proxy, patch.object(resolver.time, "monotonic", side_effect=lambda: next(clock)), patch.object(resolver, "Twitch") as twitch:
+        direct_stream(twitch)
+        templates = [f"https://bad{i}.example/live/$channel" for i in range(5)] + [GOOD]
+        result = json.loads(resolver.resolve("Linkus7", json.dumps(templates)))
+    assert result["proxy_failed"] is True
+    assert [url.split("/")[2] for url in calls] == ["bad0.example", "bad1.example"]
+
+
 @pytest.mark.parametrize("template", ["http://good.example/live/$channel", "https://good.example/live/", "https://user:pw@good.example/live/$channel", "good.example/live/$channel", 7])
 def test_invalid_templates_are_never_requested(template):
     proxy, calls = fake_proxies({"good.example"})
