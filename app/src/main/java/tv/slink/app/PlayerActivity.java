@@ -36,6 +36,7 @@ import androidx.media3.common.Player;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.hls.HlsManifest;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.ui.PlayerView;
 
@@ -90,6 +91,19 @@ public class PlayerActivity extends ComponentActivity {
             root.requestFocus();
         }
     };
+    private static final long AD_CHECK_MS = 250;
+    private TextView adNotice;
+    private final Runnable adCheck = new Runnable() {
+        @Override public void run() {
+            if (player == null) return;
+            long position = player.getCurrentPosition();
+            boolean ad = player.getCurrentManifest() instanceof HlsManifest manifest
+                    && StitchedAds.within(manifest.mediaPlaylist, position, position + AD_CHECK_MS);
+            adNotice.setVisibility(ad ? View.VISIBLE : View.GONE);
+            player.setVolume(ad ? 0f : 1f);
+            handler.postDelayed(this, AD_CHECK_MS);
+        }
+    };
     private final Runnable checkpoint = new Runnable() {
         @Override public void run() {
             updateViewing(); saveVideoProgress();
@@ -133,6 +147,11 @@ public class PlayerActivity extends ComponentActivity {
         playerView.setUseController(false);
         playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS);
         root.addView(playerView, new FrameLayout.LayoutParams(-1, -1));
+        if (!vod && new AdFreeProxy(this).enabled()) {
+            adNotice = TvUi.text(this, "Ad hidden. The stream continues after the break.", 20, TvUi.MUTED);
+            adNotice.setGravity(Gravity.CENTER); adNotice.setBackgroundColor(Color.BLACK); adNotice.setVisibility(View.GONE);
+            root.addView(adNotice, new FrameLayout.LayoutParams(-1, -1));
+        }
         if (!vod)
             chat = new ChatPanel(this, root, playerView, extra("broadcaster_id"), stream.optString("channel"));
         String displayName = extra("display_name");
@@ -388,6 +407,7 @@ public class PlayerActivity extends ComponentActivity {
             }
         });
         prepare();
+        if (adNotice != null) handler.post(adCheck);
     }
 
     private void refreshMetadata() {

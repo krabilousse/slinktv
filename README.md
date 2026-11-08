@@ -10,7 +10,7 @@ SlinkTV is a Twitch player for Android TV 14 and newer. It runs [Streamlink](htt
 - **Phone login:** scan a QR code on the TV with your phone to sign in to Twitch.
 - **Videos:** past broadcasts from followed channels, with resume and fast seeking.
 - **Chat:** read-only live chat with Twitch and 7TV emotes, shown beside or over the video.
-- **Optional ad-free proxy:** route the stream playlist through community servers, as Xtra does (off by default).
+- **Optional ad-free proxy:** route the stream playlist through community servers, as Xtra does (off by default). Ads that Twitch still inserts are hidden and muted.
 - **Remote-friendly:** every screen works with a D-pad.
 - **Self-updating:** the app installs new versions from GitHub Releases, with Stable and Preview channels.
 
@@ -28,7 +28,7 @@ With ADB: `adb install -r SlinkTV.apk`
 ## Notes
 
 - The app is not affiliated with Twitch. Guest browsing uses Twitch's unofficial web API, which can change.
-- Ads play normally. Subscriber-only streams are not supported.
+- Ads play normally unless the ad-free proxy is on. Subscriber-only streams are not supported.
 - Third-party licenses are listed in the app under **Licenses**.
 
 ## Development

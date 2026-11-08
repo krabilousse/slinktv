@@ -488,7 +488,7 @@ public class MainActivity extends ComponentActivity {
         return proxy.enabled() ? "On · " + count + (count == 1 ? " server" : " servers") : "Off";
     }
     private static String proxyMessage(AdFreeProxy proxy) {
-        return "Fetches the stream playlist through community servers outside your region. They can see your IP address and the channel you watch. Video still comes from Twitch.\n\nNow: " + proxyLabel(proxy);
+        return "Fetches the stream playlist through community servers outside your region. They can see your IP address and the channel you watch. Video still comes from Twitch.\n\nTwitch can still insert an ad. The player then hides and mutes it until the stream returns.\n\nNow: " + proxyLabel(proxy);
     }
     private void chooseAdFreeProxy() {
         AdFreeProxy proxy = new AdFreeProxy(this);
