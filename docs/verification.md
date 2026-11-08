@@ -73,4 +73,4 @@ The companion test APK is `dist/SlinkTV-0.1.0-tests.apk`. Instrumentation tests 
 
 ## Phase 2 conclusion
 
-Phone/QR login for Helix account access and followed-stream listing is feasible through Twitch's official public-client device flow; it needs this app's own registered client ID. No TV browser is necessary for that account-consent flow. Authenticated playback and integrity challenges remain separate investigations. See [primary-source research](research.md).
+Phone/QR login for Helix account access and followed-stream listing is feasible through Twitch's official public-client device flow; it needs this app's own registered client ID. No TV browser is necessary for that account-consent flow. Authenticated playback and integrity challenges remain separate investigations. See primary-source research.

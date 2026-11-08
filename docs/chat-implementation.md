@@ -2,7 +2,7 @@
 
 The player owns presentation and lifecycle. `ChatPanel` owns the read-only panel, saved placement/opacity, account consent state, and emote resources. `TwitchChat` owns one EventSub connection (temporarily two during a server-directed handoff). All authenticated HTTP calls go through the existing serialized account worker; chat never owns or logs tokens. `ChatLog` applies deduplication and moderation before rendering. `ChatEmotes` loads public 7TV metadata and bounded images; `ChatAdapter` owns row spans and visible animation lifetimes.
 
-The implementation follows the existing [prototype/research](chat-research.md): Docked / Overlay / Hidden, Show/Hide restoring the previous mode, opacity applied only to the panel background, animated WebP/GIF, proportional wide emotes, and zero-width composition. It preserves the player's existing Back-to-wall behavior outside dialogs. No chat messages are sent.
+The implementation follows the existing prototype/research: Docked / Overlay / Hidden, Show/Hide restoring the previous mode, opacity applied only to the panel background, animated WebP/GIF, proportional wide emotes, and zero-width composition. It preserves the player's existing Back-to-wall behavior outside dialogs. No chat messages are sent.
 
 New device authorizations request `user:read:follows user:read:chat`; old follow-only sessions remain valid. Enable chat initiates QR reauthorization without clearing the current login. Cancel or denied authorization preserves the previous session. Chat HTTP 403 errors must not sign the user out of the rest of the app.
 
@@ -32,4 +32,4 @@ The transcript is capped at 100 messages, deduplication/moderation indexes at 51
 
 OkHttp 5.3.2 is pinned for compatibility with compile SDK 36; newer 5.5.1 requires SDK 37. OkHttp/Okio/Kotlin license texts ship with the existing notices. This release retains the existing 4 KB-native-page limitation in the Python XML dependencies; chat does not change that limitation.
 
-Current contracts checked against [Twitch EventSub WebSockets](https://dev.twitch.tv/docs/eventsub/handling-websocket-events/), [chat event authorization](https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelchatmessage), [moderation events](https://dev.twitch.tv/docs/chat/moderation/), and [Android ImageDecoder](https://developer.android.com/reference/android/graphics/ImageDecoder). The original [research](chat-research.md) records the 7TV metadata and composition sources.
+Current contracts checked against [Twitch EventSub WebSockets](https://dev.twitch.tv/docs/eventsub/handling-websocket-events/), [chat event authorization](https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelchatmessage), [moderation events](https://dev.twitch.tv/docs/chat/moderation/), and [Android ImageDecoder](https://developer.android.com/reference/android/graphics/ImageDecoder). The original research records the 7TV metadata and composition sources.

@@ -1,6 +1,6 @@
 # SlinkTV 0.6.0 verification
 
-Version 0.6.0 / code 8 implements the requested chat simplification, compact placement controls, VOD navigation and discovery changes, and GitHub-backed self-updates. [Changelog](../CHANGELOG.md), [release operation](releases.md), and [primary-source research](update-seeking-research.md) describe the resulting behavior and decisions.
+Version 0.6.0 / code 8 implements the requested chat simplification, compact placement controls, VOD navigation and discovery changes, and GitHub-backed self-updates. [Changelog](../CHANGELOG.md), [release operation](releases.md), and primary-source research describe the resulting behavior and decisions.
 
 ## Tests and captures
 

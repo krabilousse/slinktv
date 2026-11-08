@@ -17,7 +17,7 @@ The default public repository needs no credential. Private custom repositories c
 
 The credential is sent only to the configured repository's exact GitHub API origin/path. Release metadata selects exact `update.json` and APK asset names. Both assets use GitHub's authenticated binary asset endpoint. Redirects must remain HTTPS and receive no authorization header. Custom HTTPS feeds receive no GitHub credentials.
 
-See [SmartTube and update research](update-seeking-research.md) for primary sources and device-flow alternatives.
+
 
 ## TV update behavior
 
@@ -35,7 +35,7 @@ Version 0.6.0 uses a non-debuggable release build signed with the same key as ea
 2. Add the matching `## [version] - date` entry to `CHANGELOG.md`.
 3. Build/test locally with `scripts/build-release.ps1`. The script reuses the installed prototype key; specify `-SigningKey` if using its backup.
 4. Commit using the owner's Git identity, then create an annotated `v<version>` tag. Push the commit and tag. The tag must match the Gradle version.
-5. The tagged-release workflow runs Android host tests, Python tests and lint, builds/signs the APK, verifies signing and ZIP alignment, and checks version-code monotonicity against published manifests. It creates a draft release, uploads the universal APK, `update.json`, and `SHA256SUMS.txt`, then publishes it. Preview tags containing `-` become prereleases.
+5. The tagged-release workflow runs Android host tests, Python tests and lint, builds/signs the APK, verifies signing and ZIP alignment, and checks version-code monotonicity against published manifests. It creates a draft release, uploads the universal APK (also as `SlinkTV.apk`, so `releases/latest/download/SlinkTV.apk` always serves the newest stable build), `update.json`, and `SHA256SUMS.txt`, then publishes it. Preview tags containing `-` become prereleases.
 
 The first release draft can be created through the owner's authenticated `gh` CLI before pushing the tag, preserving that user's release authorship; the workflow fills and publishes the draft. Published releases are immutable to the workflow: reruns refuse to replace them. To fix a published build, use a new version and tag. A failed draft can be retried.
 

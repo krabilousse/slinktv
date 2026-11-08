@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.0] - 2026-11-08
+
+- Shorten the README to a feature summary and install guide, with the app logo.
+- Remove research notes and HTML design prototypes from the repository.
+- Each release also publishes `SlinkTV.apk`, so `releases/latest/download/SlinkTV.apk` always downloads the newest stable version.
+
 ## [0.6.1] - 2026-11-08
 
 - The source repository is now public. Update checks and downloads from the default GitHub source work without a credential, including automatic checks on app opening.

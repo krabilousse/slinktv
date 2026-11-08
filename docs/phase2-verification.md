@@ -33,4 +33,4 @@ On the Xiaomi Mi Box:
 5. Back out and reopen the account screen; restart the app to check saved login. Try **Refresh**, cancellation of a new QR login, and **Sign out** followed by reopening the screen.
 6. Confirm the existing public-stream player still opens and Back returns to SlinkTV.
 
-The lists are diagnostic and are not yet playback shortcuts. The QR session authorizes Helix account data; it does not authenticate Streamlink playback or provide subscriber/ad-free playback benefits. See [the source research](phase2-research.md) for the distinction and the Xtra/Frosty comparisons.
+The lists are diagnostic and are not yet playback shortcuts. The QR session authorizes Helix account data; it does not authenticate Streamlink playback or provide subscriber/ad-free playback benefits. See the source research for the distinction and the Xtra/Frosty comparisons.

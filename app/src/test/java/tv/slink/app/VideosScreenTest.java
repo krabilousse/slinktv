@@ -123,8 +123,7 @@ public class VideosScreenTest {
                 RecyclerView cards=grid(root);assertEquals(6,cards.getChildCount());
                 for(int i=0;i<cards.getChildCount();i++){
                     var holder=(VideoCards.Holder)cards.getChildViewHolder(cards.getChildAt(i));
-                    String file=i%2==0?"zelda.jpg":"hades.jpg";
-                    holder.image.setImageDrawable(android.graphics.drawable.Drawable.createFromPath("../docs/prototypes/assets/"+file));
+                    holder.image.setImageDrawable(new android.graphics.drawable.ColorDrawable(i%2==0?0xFF3A4A6B:0xFF5B3A4A));
                     assertTrue(holder.itemView.getBottom()<=cards.getHeight());
                 }
                 assertTrue(VideoFeatureTest.button(root,"Load more").getRight()<=((View)VideoFeatureTest.button(root,"Load more").getParent()).getWidth());
