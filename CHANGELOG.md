@@ -1,8 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.8.0] - 2026-11-08
 
-- Add an optional ad-free proxy (Settings → Ad-free proxy) that fetches live stream playlists through community servers, falling back to Twitch directly when none respond.
+- Add an optional ad-free proxy (Settings → Ad-free proxy), off by default. It fetches live stream playlists through the same community servers as Xtra; video still comes from Twitch.
+- A dead server is skipped after 4 seconds and the last working server is tried first. If no server answers within 12 seconds, playback starts directly from Twitch with a notice.
+- Edit the server list in the same dialog, one per line, or restore the defaults.
 
 ## [0.7.0] - 2026-11-08
 
