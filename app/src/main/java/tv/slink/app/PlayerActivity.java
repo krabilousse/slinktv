@@ -90,6 +90,19 @@ public class PlayerActivity extends ComponentActivity {
             root.requestFocus();
         }
     };
+    private static final long AD_CHECK_MS = 250;
+    private TextView adNotice;
+    private AdBypass adBypass;
+    private final Runnable adCheck = new Runnable() {
+        @Override public void run() {
+            if (player == null) return;
+            boolean backup = adBypass.update();
+            boolean ad = !backup && StitchedAds.under(player, AD_CHECK_MS);
+            adNotice.setVisibility(ad ? View.VISIBLE : View.GONE);
+            player.setVolume(ad || backup ? 0f : 1f);
+            handler.postDelayed(this, AD_CHECK_MS);
+        }
+    };
     private final Runnable checkpoint = new Runnable() {
         @Override public void run() {
             updateViewing(); saveVideoProgress();
@@ -133,6 +146,11 @@ public class PlayerActivity extends ComponentActivity {
         playerView.setUseController(false);
         playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS);
         root.addView(playerView, new FrameLayout.LayoutParams(-1, -1));
+        if (!vod && new AdFreeProxy(this).enabled()) {
+            adNotice = TvUi.text(this, "Ad hidden. The stream continues after the break.", 20, TvUi.MUTED);
+            adNotice.setGravity(Gravity.CENTER); adNotice.setBackgroundColor(Color.BLACK); adNotice.setVisibility(View.GONE);
+            root.addView(adNotice, new FrameLayout.LayoutParams(-1, -1));
+        }
         if (!vod)
             chat = new ChatPanel(this, root, playerView, extra("broadcaster_id"), stream.optString("channel"));
         String displayName = extra("display_name");
@@ -343,8 +361,9 @@ public class PlayerActivity extends ComponentActivity {
                 headers.put(key, jsonHeaders.optString(key));
             }
         }
+        String userAgent = "SlinkTV/" + BuildConfig.VERSION_NAME + " (Android TV)";
         DefaultHttpDataSource.Factory http = new DefaultHttpDataSource.Factory()
-                .setUserAgent("SlinkTV/" + BuildConfig.VERSION_NAME + " (Android TV)")
+                .setUserAgent(userAgent)
                 .setDefaultRequestProperties(headers)
                 .setConnectTimeoutMs(15000).setReadTimeoutMs(15000);
         player = new ExoPlayer.Builder(this, new DefaultRenderersFactory(this).setEnableDecoderFallback(true))
@@ -388,6 +407,10 @@ public class PlayerActivity extends ComponentActivity {
             }
         });
         prepare();
+        if (adNotice != null) {
+            adBypass = new AdBypass(this, playerView, player, stream.optString("channel"), userAgent, headers, http, videoResolver);
+            handler.post(adCheck);
+        }
     }
 
     private void refreshMetadata() {
@@ -555,6 +578,7 @@ public class PlayerActivity extends ComponentActivity {
         handler.removeCallbacksAndMessages(null);
         wakeKeys.clear();
         if (receiverRegistered) { unregisterReceiver(screenState); receiverRegistered = false; }
+        if (adBypass != null) { adBypass.stop(); adBypass = null; }
         if (player != null) {
             playerView.setPlayer(null);
             player.release();

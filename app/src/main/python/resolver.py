@@ -6,7 +6,7 @@ from urllib.parse import urlsplit
 
 from streamlink import Streamlink
 from streamlink.exceptions import PluginError
-from streamlink.plugins.twitch import Twitch, TwitchHLSStream
+from streamlink.plugins.twitch import Twitch, TwitchAPI, TwitchHLSStream, UsherService
 from streamlink.stream.hls import HLSStream
 
 DEMO_URL = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
@@ -82,6 +82,27 @@ def resolve_proxied(channel, templates):
                 last_proxy = template
                 return {"channel": channel, "kind": "live", "variants": variants, "headers": playback_headers(session), "proxy": urlsplit(template).hostname}
         return None
+    finally:
+        session.http.close()
+
+
+def resolve_swap(value):
+    """Xtra's video swap source: a fresh Android autoplay session. Twitch caps it at 360p."""
+    try:
+        channel = channel_name(value)
+    except ValueError as exc:
+        return json.dumps({"error": str(exc)})
+    session = new_session(PROXY_TIMEOUT)
+    try:
+        api = TwitchAPI(session, access_token_param=[("platform", "android"), ("playerType", "autoplay")])
+        response, sig, token = api.access_token(True, channel)
+        if response != "token" or not token:
+            return json.dumps({"error": "No swap stream."})
+        url = UsherService(session).channel(channel, sig=sig, token=token, fast_bread=True, platform="android")
+        variants = playable(TwitchHLSStream.parse_variant_playlist(session, url, name_key="name"))
+        return json.dumps({"variants": variants, "headers": playback_headers(session)} if variants else {"error": "No swap stream."})
+    except Exception:
+        return json.dumps({"error": "No swap stream."})
     finally:
         session.http.close()
 

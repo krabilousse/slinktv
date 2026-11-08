@@ -185,3 +185,29 @@ def test_proxy_and_direct_failures_never_expose_urls_or_exception_text():
     data = json.loads(result)
     assert data["proxy_failed"] is True and "error" in data
     assert "SECRET" not in result and "https:" not in data["error"] and "bad.example" not in result
+
+
+def test_swap_requests_an_android_autoplay_session_and_returns_its_streams():
+    with patch.object(resolver, "TwitchAPI") as api, patch.object(resolver.TwitchHLSStream, "parse_variant_playlist") as parse:
+        api.return_value.access_token.return_value = ("token", "SIG", '{"channel":"linkus7"}')
+        parse.return_value = {"360p30": HLSStream(resolver.Streamlink(), "https://example.com/360.m3u8")}
+        result = json.loads(resolver.resolve_swap("Linkus7"))
+    assert api.call_args.kwargs["access_token_param"] == [("platform", "android"), ("playerType", "autoplay")]
+    usher = parse.call_args.args[1]
+    assert "/channel/hls/linkus7.m3u8" in usher and "platform=android" in usher and "sig=SIG" in usher
+    assert [v["name"] for v in result["variants"]] == ["360p30"]
+
+
+@pytest.mark.parametrize("token", [("error", None, "https://usher.ttvnw.net/?sig=SECRET"), ("token", None, None)])
+def test_swap_failures_are_plain_errors(token):
+    with patch.object(resolver, "TwitchAPI") as api:
+        api.return_value.access_token.return_value = token
+        result = resolver.resolve_swap("Linkus7")
+    assert json.loads(result) == {"error": "No swap stream."}
+
+
+def test_swap_network_errors_never_leak_urls():
+    with patch.object(resolver, "TwitchAPI") as api:
+        api.return_value.access_token.side_effect = OSError("https://gql.twitch.tv/?token=SECRET")
+        result = resolver.resolve_swap("Linkus7")
+    assert json.loads(result) == {"error": "No swap stream."}
