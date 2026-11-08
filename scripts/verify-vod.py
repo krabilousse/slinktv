@@ -43,5 +43,4 @@ if __name__ == "__main__":
         report = probe(sys.argv[1])
     except Exception as error:
         raise SystemExit("VOD check failed: " + type(error).__name__)
-    Path("docs/evidence/vod-0.5.0-host.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))

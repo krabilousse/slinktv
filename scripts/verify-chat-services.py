@@ -47,8 +47,4 @@ def probe():
 
 
 if __name__ == "__main__":
-    evidence = probe()
-    output = Path("docs/evidence/chat-0.4.0-host.json")
-    output.parent.mkdir(exist_ok=True)
-    output.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(evidence, indent=2))
+    print(json.dumps(probe(), indent=2))

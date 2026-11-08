@@ -21,6 +21,6 @@ public class PublicUpdateProbeTest {
         JSONObject evidence=new JSONObject().put("checked_at",java.time.Instant.now().toString()).put("version",release.manifest().version())
                 .put("version_code",release.manifest().code()).put("size",Files.size(output)).put("sha256",release.manifest().sha256())
                 .put("actual_java_updater",true).put("anonymous_public_release",true).put("checksum_verified",true).put("android_installer_tested",false);
-        Files.write(Path.of("../docs/evidence/public-update-"+release.manifest().version()+".json"),(evidence.toString(2)+"\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        System.out.println(evidence.toString(2));
     }
 }
