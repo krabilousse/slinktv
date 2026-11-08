@@ -15,7 +15,7 @@ For a credential-free distribution later, use a public APK/feed host while keepi
 - Automatic checks run on opening the app, at most every six hours, when the source is accessible. They never interrupt playback. Manual Check now bypasses the interval.
 - The user chooses Download, then Install. Android may first require enabling **Install unknown apps** for SlinkTV. Return to the app and select Install again. Android asks for installation confirmation; silent installation is not implemented.
 - Downloads are bounded to 300 MB, time-limited, written to app-private storage, and checked for exact byte count and SHA-256. Package name, version code, and signing certificates must match the update policy before the file is handed to Android. Only newer versions are accepted.
-- Cancelling the installer keeps the verified download available while the update screen remains open. Reopening the screen can download again. An interrupted process leaves a partial file that the next download overwrites; it is never offered for installation.
+- Cancelling the installer keeps the verified download available while the update screen remains open. Reopening the screen can download again. Each download has a separate partial file so cancelling/reopening cannot overwrite another worker's file. Partial files are never offered for installation. Verified filenames include version and checksum so an installer URI keeps identifying the selected build.
 - FileProvider exposes only the update directory. Launching Android's installer does not mean installation succeeded; the installed version is displayed on reopening the app.
 
 ## Signing and publishing

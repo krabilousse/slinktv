@@ -127,7 +127,8 @@ final class UpdateClient {
     File download(Context context,Release release,IntConsumer progress) throws Exception {
         File directory=new File(context.getFilesDir(),"updates");if(!directory.isDirectory()&&!directory.mkdirs())throw new IOException("Cannot create update directory.");
         if(directory.getUsableSpace()<release.manifest.size+10*1024*1024)throw new IOException("Not enough free space for the update.");
-        File part=new File(directory,"download.part"),ready=new File(directory,"update.apk");
+        File part=File.createTempFile("download-",".part",directory);
+        File ready=new File(directory,"update-"+release.manifest.code+"-"+release.manifest.sha256.substring(0,12)+".apk");
         try {
             downloadFile(part,release,progress);verifyPackage(context,part,release.manifest);
             Files.move(part.toPath(),ready.toPath(),StandardCopyOption.REPLACE_EXISTING);
