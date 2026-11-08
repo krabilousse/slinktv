@@ -139,6 +139,56 @@ public class StreamWallTest {
         }
     }
 
+    private boolean showsText(View root, String text) {
+        if (root instanceof android.widget.TextView view && text.contentEquals(view.getText())) return true;
+        if (root instanceof ViewGroup group) for (int i = 0; i < group.getChildCount(); i++) if (showsText(group.getChildAt(i), text)) return true;
+        return false;
+    }
+
+    private android.widget.EditText editText(View root) {
+        if (root instanceof android.widget.EditText input) return input;
+        if (root instanceof ViewGroup group) for (int i = 0; i < group.getChildCount(); i++) {
+            android.widget.EditText input = editText(group.getChildAt(i)); if (input != null) return input;
+        }
+        return null;
+    }
+
+    @Test public void adFreeProxyCanBeToggledAndEditedFromSettingsAndPersists() {
+        try (var activity = Robolectric.buildActivity(MainActivity.class).create().visible()) {
+            View root = activity.get().findViewById(android.R.id.content);
+            button(root, "Settings").performClick();
+            root.findViewWithTag("ad_proxy").performClick();
+            android.app.AlertDialog dialog = org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();
+            Button toggle = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE);
+            assertEquals("Turn on", toggle.getText().toString());
+            toggle.performClick();
+            assertTrue(new AdFreeProxy(activity.get()).enabled());
+            assertTrue(dialog.isShowing());
+            assertEquals("Turn off", toggle.getText().toString());
+            dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE).performClick();
+            org.robolectric.shadows.ShadowLooper.idleMainLooper();
+            assertTrue(showsText(root, "On · 12 servers"));
+            assertTrue(root.findViewWithTag("ad_proxy").isFocused());
+
+            root.findViewWithTag("ad_proxy").performClick();
+            org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog().getButton(android.app.AlertDialog.BUTTON_NEUTRAL).performClick();
+            org.robolectric.shadows.ShadowLooper.idleMainLooper();
+            android.app.AlertDialog editor = org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();
+            android.widget.EditText input = editText(editor.getWindow().getDecorView());
+            assertTrue(input.getText().toString().startsWith("https://eu.luminous.dev/live/$channel\n"));
+            input.setText("http://insecure.example/live/$channel");
+            editor.getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick();
+            assertTrue(editor.isShowing());
+            assertNotNull(input.getError());
+            input.setText("as.luminous.dev/live/$channel");
+            editor.getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick();
+            org.robolectric.shadows.ShadowLooper.idleMainLooper();
+            assertFalse(editor.isShowing());
+            assertTrue(showsText(root, "On · 1 server"));
+            assertEquals(List.of("https://as.luminous.dev/live/$channel"), new AdFreeProxy(activity.get()).servers());
+        }
+    }
+
     @Test public void leavingTheWallCancelsCardLoadingAndIgnoresItsLateResult() throws Exception {
         try (var activity = Robolectric.buildActivity(MainActivity.class).create()) {
             var workerField = MainActivity.class.getDeclaredField("resolver"); workerField.setAccessible(true);

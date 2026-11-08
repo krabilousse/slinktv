@@ -18,6 +18,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.activity.ComponentActivity;
 import androidx.activity.OnBackPressedCallback;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -350,10 +351,10 @@ public class MainActivity extends ComponentActivity {
         focusedId = item.id(); resolving = true; int request = ++playGeneration;
         cards.setLoadingChannel(item.login());
         if (item.id().isEmpty()) opening.setVisibility(View.VISIBLE);
-        String owner = accountId;
+        String owner = accountId, proxies = new AdFreeProxy(this).requestJson();
         resolver.execute(() -> {
             String response;
-            try { response = StreamEngine.call(this, "resolver", "resolve", item.login()); }
+            try { response = StreamEngine.call(this, "resolver", "resolve", item.login(), proxies); }
             catch (Exception exception) { response = "{\"error\":\"Stream engine unavailable. Restart the app.\"}"; }
             String data = response;
             runOnUiThread(() -> completePlayback(request, item, owner, data));
@@ -370,6 +371,8 @@ public class MainActivity extends ComponentActivity {
                     .putExtra("account_id", owner).putExtra("broadcaster_id", item.id()).putExtra("display_name", item.name())
                     .putExtra("stream_title", item.title()).putExtra("game_name", item.game()).putExtra("viewer_count", (long) item.viewers())
                     .putExtra("avatar_url", item.avatar()));
+            if (!stream.optString("proxy").isEmpty()) Toast.makeText(this, "Ad-free proxy: " + stream.getString("proxy"), Toast.LENGTH_SHORT).show();
+            else if (stream.optBoolean("proxy_failed")) Toast.makeText(this, "Ad-free proxies unavailable. Playing directly; ads may appear.", Toast.LENGTH_LONG).show();
         } catch (Exception exception) { showError("The stream response was incomplete. Retry."); }
     }
     private void cancelPlayback() {
@@ -451,6 +454,7 @@ public class MainActivity extends ComponentActivity {
         }
         setting(content, "Popular stream language", languageLabel(), "Change", "language", v -> chooseLanguage());
         setting(content, "Default quality", PlaybackQuality.preferenceLabel(PlaybackQuality.preference(this)), "Change", "quality", v -> chooseDefaultQuality());
+        setting(content, "Ad-free proxy", proxyLabel(new AdFreeProxy(this)), "Change", "ad_proxy", v -> chooseAdFreeProxy());
         setting(content, "App updates", "Source, release channel and installation", "Open", "updates", v -> startActivity(new Intent(this, UpdateActivity.class)));
         if (signedIn()) setting(content, "Video resume positions", "Saved on this TV for this account", "Clear", "video_progress", v -> { new VideoProgress(this).clear(accountId); showSettings("video_progress"); });
         setting(content, "Player test", "HLS sample", "Play", "test", v -> playDemo());
@@ -478,6 +482,41 @@ public class MainActivity extends ComponentActivity {
                     PlaybackQuality.savePreference(this, PlaybackQuality.LIMITS[index]);
                     d.dismiss(); showSettings("quality");
                 }).setNegativeButton("Cancel", null).show();
+    }
+    private static String proxyLabel(AdFreeProxy proxy) {
+        int count = proxy.servers().size();
+        return proxy.enabled() ? "On · " + count + (count == 1 ? " server" : " servers") : "Off";
+    }
+    private static String proxyMessage(AdFreeProxy proxy) {
+        return "Fetches the stream playlist through community servers outside your region. They can see your IP address and the channel you watch. Video still comes from Twitch.\n\nNow: " + proxyLabel(proxy);
+    }
+    private void chooseAdFreeProxy() {
+        AdFreeProxy proxy = new AdFreeProxy(this);
+        AlertDialog shown = new AlertDialog.Builder(this).setTitle("Ad-free proxy").setMessage(proxyMessage(proxy))
+                .setPositiveButton(proxy.enabled() ? "Turn off" : "Turn on", null).setNeutralButton("Edit servers", (d, w) -> editAdFreeServers())
+                .setNegativeButton("Done", null).create();
+        dialog = shown;
+        shown.setOnDismissListener(d -> { if (!destroyed) showSettings("ad_proxy"); });
+        shown.show();
+        shown.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            proxy.enabled(!proxy.enabled());
+            shown.setMessage(proxyMessage(proxy)); ((Button) v).setText(proxy.enabled() ? "Turn off" : "Turn on");
+        });
+    }
+    private void editAdFreeServers() {
+        AdFreeProxy proxy = new AdFreeProxy(this);
+        EditText input = new EditText(this); input.setText(String.join("\n", proxy.servers())); input.setTextSize(15);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        input.setMinLines(4); input.setMaxLines(8); input.setGravity(Gravity.TOP | Gravity.START); input.setPadding(dp(20), dp(12), dp(20), dp(12));
+        AlertDialog editor = new AlertDialog.Builder(this).setTitle("Ad-free proxy servers").setMessage("One per line, tried in order. $channel is replaced by the channel name.")
+                .setView(input).setPositiveButton("Save", null).setNegativeButton("Cancel", null)
+                .setNeutralButton("Default", (d, w) -> proxy.restoreDefaults()).create();
+        dialog = editor;
+        editor.setOnDismissListener(d -> { if (!destroyed) showSettings("ad_proxy"); });
+        editor.show();
+        editor.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            try { proxy.servers(input.getText().toString()); editor.dismiss(); } catch (IllegalArgumentException error) { input.setError(error.getMessage()); }
+        });
     }
     private void showLicenses() {
         try (java.io.InputStream input = getAssets().open("THIRD_PARTY_NOTICES.txt")) {

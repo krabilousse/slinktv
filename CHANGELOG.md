@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- Add an optional ad-free proxy (Settings → Ad-free proxy) that fetches live stream playlists through community servers, falling back to Twitch directly when none respond.
+
 ## [0.7.0] - 2026-11-08
 
 - Shorten the README to a feature summary and install guide, with the app logo.

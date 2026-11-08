@@ -5,10 +5,13 @@ from urllib.parse import urlsplit
 
 from streamlink import Streamlink
 from streamlink.exceptions import PluginError
-from streamlink.plugins.twitch import Twitch
+from streamlink.plugins.twitch import Twitch, TwitchHLSStream
 from streamlink.stream.hls import HLSStream
 
 DEMO_URL = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+PROXY_QUERY = "allow_source=true&allow_audio_only=true&fast_bread=true&include_unavailable=true&supported_codecs=h264"
+PROXY_TIMEOUT = 4.0
+last_proxy = None
 
 
 def channel_name(value):
@@ -25,50 +28,101 @@ def channel_name(value):
     return value.lower()
 
 
-def resolve(value):
+def resolve(value, proxies="[]"):
     try:
         channel = channel_name(value)
     except ValueError as exc:
         return json.dumps({"error": str(exc)})
-    return resolve_url("https://www.twitch.tv/" + channel, channel, False)
+    url = "https://www.twitch.tv/" + channel
+    templates = proxy_templates(proxies)
+    if not templates:
+        return json.dumps(resolve_url(url, channel, False))
+    return json.dumps(resolve_proxied(channel, templates) or {**resolve_url(url, channel, False), "proxy_failed": True})
+
+
+def proxy_templates(proxies):
+    try:
+        values = json.loads(proxies)
+    except (TypeError, ValueError):
+        return []
+    if not isinstance(values, list):
+        return []
+    templates = []
+    for value in values:
+        if not isinstance(value, str) or "$channel" not in value:
+            continue
+        try:
+            parsed = urlsplit(value)
+        except ValueError:
+            continue
+        if parsed.scheme == "https" and parsed.hostname and parsed.username is None and parsed.password is None and value not in templates:
+            templates.append(value)
+    return templates
+
+
+def resolve_proxied(channel, templates):
+    global last_proxy
+    start = templates.index(last_proxy) if last_proxy in templates else 0
+    session = new_session(PROXY_TIMEOUT)
+    session.http.headers.update({"Referer": "https://player.twitch.tv", "Origin": "https://player.twitch.tv"})
+    try:
+        for template in templates[start:] + templates[:start]:
+            url = template.replace("$channel", channel)
+            try:
+                streams = TwitchHLSStream.parse_variant_playlist(session, url + ("&" if "?" in url else "?") + PROXY_QUERY, name_key="name", check_streams=True)
+                variants = playable(streams)
+            except Exception:
+                continue
+            if variants:
+                last_proxy = template
+                return {"channel": channel, "kind": "live", "variants": variants, "headers": playback_headers(session), "proxy": urlsplit(template).hostname}
+        return None
+    finally:
+        session.http.close()
 
 
 def resolve_video(value):
     value = str(value).strip()
     if not re.fullmatch(r"[0-9]{1,30}", value):
         return json.dumps({"error": "Invalid Twitch video ID."})
-    return resolve_url("https://www.twitch.tv/videos/" + value, "", True)
+    return json.dumps(resolve_url("https://www.twitch.tv/videos/" + value, "", True))
+
+
+def new_session(timeout):
+    session = Streamlink(plugins_builtin=False)
+    session.set_option("http-timeout", timeout)
+    # Desktop Chromium cannot be launched on Android. Fail visibly if Twitch requires it.
+    session.set_option("webbrowser", False)
+    return session
+
+
+def playable(streams):
+    variants = [{"name": name, "url": stream.to_url()} for name, stream in streams.items()
+                if name not in ("best", "worst") and "_portrait" not in name.lower() and isinstance(stream, HLSStream)]
+    variants.sort(key=lambda item: quality_rank(item["name"]), reverse=True)
+    return variants
+
+
+def playback_headers(session):
+    return {key: session.http.headers[key] for key in ("User-Agent", "Referer", "Origin") if key in session.http.headers}
 
 
 def resolve_url(url, channel, video):
-    session = Streamlink(plugins_builtin=False)
-    session.set_option("http-timeout", 15.0)
-    # Desktop Chromium cannot be launched on Android. Fail visibly if Twitch requires it.
-    session.set_option("webbrowser", False)
+    session = new_session(15.0)
     try:
         plugin = Twitch(session, url)
         streams = plugin.streams()
         if not streams:
-            return json.dumps({"error": "This video is unavailable, expired, or restricted." if video else f"{channel} is offline or has no publicly available stream. Try another channel or retry when live."})
-        variants = []
-        for name, stream in streams.items():
-            if name in ("best", "worst") or "_portrait" in name.lower() or not isinstance(stream, HLSStream):
-                continue
-            variants.append({"name": name, "url": stream.to_url()})
-        variants.sort(key=lambda item: quality_rank(item["name"]), reverse=True)
+            return {"error": "This video is unavailable, expired, or restricted." if video else f"{channel} is offline or has no publicly available stream. Try another channel or retry when live."}
+        variants = playable(streams)
         if not variants:
-            return json.dumps({"error": "Twitch did not return a supported HLS stream."})
-        return json.dumps({
-            "channel": channel,
-            "kind": "vod" if video else "live",
-            "variants": variants,
-            "headers": {key: session.http.headers[key] for key in ("User-Agent", "Referer", "Origin") if key in session.http.headers},
-        })
+            return {"error": "Twitch did not return a supported HLS stream."}
+        return {"channel": channel, "kind": "vod" if video else "live", "variants": variants, "headers": playback_headers(session)}
     except PluginError:
-        return json.dumps({"error": "Twitch could not provide this video. It may be expired, restricted, or require a browser integrity check." if video else "Twitch could not provide this stream. It may be offline, restricted, or require a browser integrity check. Retry or try another channel."})
+        return {"error": "Twitch could not provide this video. It may be expired, restricted, or require a browser integrity check." if video else "Twitch could not provide this stream. It may be offline, restricted, or require a browser integrity check. Retry or try another channel."}
     except Exception:
         # Network exceptions may contain signed playback URLs; never expose them in the UI/logs.
-        return json.dumps({"error": "Could not reach Twitch. Check your connection and retry."})
+        return {"error": "Could not reach Twitch. Check your connection and retry."}
     finally:
         session.http.close()
 
