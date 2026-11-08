@@ -65,7 +65,7 @@ Open a live stream and choose **Enable chat** if prompted. Approve the new QR au
 
 **Settings → App updates** checks for a newer version, downloads it, verifies its checksum and signing identity, and opens Android's installer. Automatic checks run on app opening with a six-hour cooldown. Installation requires the TV's confirmation and may first require allowing SlinkTV to install unknown apps.
 
-The default source is the private [krabilousse/slinktv repository](https://github.com/krabilousse/slinktv). Set a fine-grained GitHub token with **Contents: read** for this repository in the masked **GitHub credential** field; no credential is bundled. It is stored encrypted on the TV. You can choose another GitHub repository or an HTTPS update manifest, and Stable/Preview releases. [Setup and release workflow](docs/releases.md) explains private access, signing, tags, changelogs and feed format. [Changes](CHANGELOG.md) lists releases.
+The default source is the public [krabilousse/slinktv repository](https://github.com/krabilousse/slinktv) on the Stable channel. No credential is needed. The optional masked **GitHub credential** field is only for private custom repositories; it is stored encrypted on the TV. You can choose another GitHub repository or an HTTPS update manifest, and Stable/Preview releases. [Setup and release workflow](docs/releases.md) explains channels, private access, signing, tags, changelogs and feed format. [Changes](CHANGELOG.md) lists releases.
 
 ## Verification and limits
 

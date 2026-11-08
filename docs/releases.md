@@ -1,18 +1,27 @@
 # Releases and in-app updates
 
-The private source repository is [krabilousse/slinktv](https://github.com/krabilousse/slinktv). The app defaults to this repository under **Settings → App updates**. Source can be changed to another GitHub repository or an HTTPS `update.json` feed. Source changes forget the saved credential and pending UI selection. Stable uses GitHub's latest stable release; Preview selects the newest published release among the first 100 releases, including prereleases. Version codes must increase across both channels.
+The public source repository is [krabilousse/slinktv](https://github.com/krabilousse/slinktv). The app defaults to this repository on the Stable channel under **Settings → App updates**, and checks it anonymously. Source can be changed to another GitHub repository or an HTTPS `update.json` feed. Source changes forget the saved credential and pending UI selection. Version codes must increase across both channels.
+
+## Channels
+
+Channels are selected by release tag, not by branch. Pushing to `main` does not publish anything.
+
+- **Stable** reads GitHub's `releases/latest`: the newest published release that is not a draft or prerelease. Tags without a hyphen, such as `v0.7.0`, produce these.
+- **Preview** reads the newest published release among the first 100, prereleases included. Tags with a hyphen, such as `v0.7.0-preview.1`, produce prereleases. When a stable release is newer, Preview users receive it too.
+
+Either channel installs a release only when its version code is higher than the installed one.
 
 ## Private-repository access
 
-Private release assets cannot be downloaded anonymously. On GitHub, create a fine-grained personal access token for **only this repository**, with **Contents: read**, and an expiry. Enter it once in **Settings → App updates → GitHub credential** using the TV/phone keyboard. The app encrypts it using Android Keystore, excludes application data from backups, masks entry, and provides Replace/Forget. This permission also permits reading repository source; it is not release-only access. No developer token is bundled in the APK. Twitch credentials are unrelated and are never used for updates.
+The default public repository needs no credential. Private custom repositories cannot be downloaded anonymously. On GitHub, create a fine-grained personal access token for **only this repository**, with **Contents: read**, and an expiry. Enter it once in **Settings → App updates → GitHub credential** using the TV/phone keyboard. The app encrypts it using Android Keystore, excludes application data from backups, masks entry, and provides Replace/Forget. This permission also permits reading repository source; it is not release-only access. No developer token is bundled in the APK. Twitch credentials are unrelated and are never used for updates.
 
 The credential is sent only to the configured repository's exact GitHub API origin/path. Release metadata selects exact `update.json` and APK asset names. Both assets use GitHub's authenticated binary asset endpoint. Redirects must remain HTTPS and receive no authorization header. Custom HTTPS feeds receive no GitHub credentials.
 
-For a credential-free distribution later, use a public APK/feed host while keeping source private. That makes the APKs public and requires a separate publishing decision. See [SmartTube and update research](update-seeking-research.md) for primary sources and device-flow alternatives.
+See [SmartTube and update research](update-seeking-research.md) for primary sources and device-flow alternatives.
 
 ## TV update behavior
 
-- Automatic checks run on opening the app, at most every six hours, when the source is accessible. They never interrupt playback. Manual Check now bypasses the interval.
+- Automatic checks run on opening the app, at most every six hours, including anonymously for public GitHub repositories. They never interrupt playback. Manual Check now bypasses the interval.
 - The user chooses Download, then Install. Android may first require enabling **Install unknown apps** for SlinkTV. Return to the app and select Install again. Android asks for installation confirmation; silent installation is not implemented.
 - Downloads are bounded to 300 MB, time-limited, written to app-private storage, and checked for exact byte count and SHA-256. Package name, version code, and signing certificates must match the update policy before the file is handed to Android. Only newer versions are accepted.
 - Cancelling the installer keeps the verified download available while the update screen remains open. Reopening the screen can download again. Each download has a separate partial file so cancelling/reopening cannot overwrite another worker's file. Partial files are never offered for installation. Verified filenames include version and checksum so an installer URI keeps identifying the selected build.

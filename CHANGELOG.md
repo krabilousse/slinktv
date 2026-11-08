@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.1] - 2026-11-08
+
+- The source repository is now public. Update checks and downloads from the default GitHub source work without a credential, including automatic checks on app opening.
+- The GitHub credential is now optional and only needed for private custom repositories.
+- The update screen describes the selected channel: Stable installs stable releases only, Preview also includes prereleases.
+
 ## [0.6.0] - 2026-11-08
 
 - Remove persistent chat headings, channel/status labels and the 7TV footer. Login and actionable errors remain visible when needed.

@@ -45,12 +45,12 @@ public class UpdateActivity extends ComponentActivity {
         action=TvUi.button(this,"Download update",v->{if(downloaded!=null)install();else download();});action.setEnabled(false);actions.addView(action);
         notes=TvUi.text(this,"",14,TvUi.MUTED);notes.setPadding(0,dp(12),0,dp(18));body.addView(notes);
         source=row(body,"Update source",settings.source().uri().toString(),v->editSource());
-        credential=row(body,"GitHub credential",settings.hasToken()?"Replace":"Set",v->editToken());
+        credential=row(body,"GitHub credential (private repositories only)",settings.hasToken()?"Replace":"Set",v->editToken());
         row(body,"Forget GitHub credential","Forget",v->{settings.forgetToken();credential.setText("Set");reset();status.setText("Credential removed.");});
-        row(body,"Release channel",settings.previews()?"Preview":"Stable",v->{boolean value=!settings.previews();settings.preferences.edit().putBoolean("previews",value).apply();((Button)v).setText(value?"Preview":"Stable");reset();});
+        row(body,"Release channel",settings.previews()?"Preview":"Stable",v->{boolean value=!settings.previews();settings.preferences.edit().putBoolean("previews",value).apply();((Button)v).setText(value?"Preview":"Stable");reset();status.setText(value?"Preview includes prereleases.":"Stable releases only.");});
         row(body,"Check on app opening",settings.automatic()?"On":"Off",v->{boolean value=!settings.automatic();settings.preferences.edit().putBoolean("automatic",value).apply();((Button)v).setText(value?"On":"Off");});
         body.addView(TvUi.button(this,"Back",v->finish()));
-        status.setText("Private GitHub repositories require a Contents: read credential.");check.requestFocus();
+        status.setText(settings.previews()?"Preview includes prereleases.":"Stable releases only.");check.requestFocus();
         if(getIntent().getBooleanExtra("check",false))check();
     }
     private int dp(int value){return TvUi.dp(this,value);}

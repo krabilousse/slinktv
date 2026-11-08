@@ -11,8 +11,7 @@ final class UpdatePrompt {
     static void onHome(Activity activity) {
         UpdateSettings settings=new UpdateSettings(activity);
         long now=System.currentTimeMillis();
-        if(!settings.automatic()||now-settings.preferences.getLong("last_check",0)<6*60*60_000L
-                ||settings.source().uri().toString().equals(UpdateSource.DEFAULT)&&!settings.hasToken()||!checking.compareAndSet(false,true))return;
+        if(!settings.automatic()||now-settings.preferences.getLong("last_check",0)<6*60*60_000L||!checking.compareAndSet(false,true))return;
         settings.preferences.edit().putLong("last_check",now).apply();
         WeakReference<Activity> owner=new WeakReference<>(activity);
         Thread thread=new Thread(()->{

@@ -10,8 +10,8 @@ android {
         applicationId 'tv.slink.app'
         minSdk 34
         targetSdk 36
-        versionCode 8
-        versionName '0.6.0'
+        versionCode 9
+        versionName '0.6.1'
         buildConfigField 'String', 'TWITCH_CLIENT_ID', '"n0w9arq3ba2jte7k24x2gje9xjstx3"'
         ndk { abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64' }
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'

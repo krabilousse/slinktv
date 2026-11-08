@@ -74,7 +74,7 @@ final class UpdateClient {
                     uri=uri.resolve(response.location);continue;
                 }
                 if(response.code==401||response.code==403||response.code==404)
-                    throw new IOException("Update source unavailable (HTTP "+response.code+"). For a private repository, check its read credential.");
+                    throw new IOException("Update source unavailable (HTTP "+response.code+"). Private repositories need a read credential.");
                 if(response.code!=200)throw new IOException("Update server returned HTTP "+response.code+".");
                 if(response.length>max)throw new IOException("Update response exceeds its size limit.");
                 byte[] buffer=new byte[64*1024];long total=0;int last=-1;
