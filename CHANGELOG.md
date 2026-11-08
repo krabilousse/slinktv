@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.0] - 2026-11-09
+
+- The ad-free proxy now handles ads that Twitch still inserts into a live stream. During the break, the player shows a backup stream until the break ends, as Xtra does. It tries the same playlist through Xtra's HTTP proxy first, then a fresh Android session at up to 360p.
+- If no backup stream is ad-free, the player hides and mutes the ad until live video returns.
+- The ad-free proxy dialog explains what happens when an ad still gets through.
+
 ## [0.8.0] - 2026-11-08
 
 - Add an optional ad-free proxy (Settings → Ad-free proxy), off by default. It fetches live stream playlists through the same community servers as Xtra; video still comes from Twitch.
