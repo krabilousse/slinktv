@@ -17,11 +17,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
+import java.util.regex.Pattern;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,36 +33,72 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowToast;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 35, qualifiers = "w960dp-h540dp-land-xhdpi")
 public class AdFreePlaybackTest {
-    private static final long LIVE_MS = 5_000, LAST_LIVE_FRAMES_MS = 17_800, AD_MS = 25_000;
+    private static final long LIVE_MS = 5_000, LAST_LIVE_FRAMES_MS = 17_800, AD_MS = 25_000, AFTER_BREAK_MS = 36_000;
+    private static final InetSocketAddress XTRA_PROXY = AdBypass.httpProxy;
+    private static final Pattern XTRA_HOSTS = AdBypass.proxiedHosts;
     private ServerSocket server;
+    private String capture, direct;
 
     @Before public void serveCapturedMidroll() throws IOException {
-        byte[] playlist;
-        try (InputStream in = getClass().getResourceAsStream("/ads/twitch-midroll.m3u8")) { playlist = in.readAllBytes(); }
+        try (InputStream in = getClass().getResourceAsStream("/ads/twitch-midroll.m3u8")) { capture = new String(in.readAllBytes(), StandardCharsets.UTF_8); }
+        direct = capture;
         server = new ServerSocket(0, 50, InetAddress.getLoopbackAddress());
-        Thread serving = new Thread(() -> {
+        daemon(() -> {
             while (!server.isClosed()) {
-                try (Socket client = server.accept()) {
-                    String request = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.US_ASCII)).readLine();
-                    boolean manifest = request != null && request.split(" ")[1].endsWith(".m3u8");
-                    OutputStream out = client.getOutputStream();
-                    out.write(((manifest ? "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.apple.mpegurl\r\nContent-Length: " + playlist.length
-                            : "HTTP/1.1 404 Not Found\r\nContent-Length: 0") + "\r\nConnection: close\r\n\r\n").getBytes(StandardCharsets.US_ASCII));
-                    if (manifest) out.write(playlist);
-                } catch (IOException closed) { }
+                try { Socket client = server.accept(); daemon(() -> answer(client)); } catch (IOException closed) { }
             }
         });
-        serving.setDaemon(true);
-        serving.start();
     }
 
-    @After public void stopServer() throws IOException { server.close(); }
+    private void answer(Socket client) {
+        try (client) {
+            String[] request = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.US_ASCII)).readLine().split(" ");
+            if (!request[1].endsWith(".m3u8")) { Thread.sleep(30_000); return; }
+            boolean throughProxy = request[1].startsWith("http://");
+            byte[] body = (throughProxy ? capture.replace("Amazon|591631848662956489", "live") : direct).getBytes(StandardCharsets.UTF_8);
+            OutputStream out = client.getOutputStream();
+            out.write(("HTTP/1.1 200 OK\r\nContent-Type: application/vnd.apple.mpegurl\r\nContent-Length: " + body.length
+                    + "\r\nConnection: close\r\n\r\n").getBytes(StandardCharsets.US_ASCII));
+            out.write(body);
+        } catch (IOException | InterruptedException | RuntimeException closed) { }
+    }
 
-    @Test public void adFreeModeCoversAndMutesAStitchedAdThenRestoresLive() {
+    private static void daemon(Runnable work) {
+        Thread thread = new Thread(work);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    @After public void stopServer() throws IOException {
+        AdBypass.httpProxy = XTRA_PROXY; AdBypass.proxiedHosts = XTRA_HOSTS;
+        server.close();
+    }
+
+    @Test public void adFreeBackupStreamReplacesTheAdUntilTheBreakEnds() {
+        new AdFreeProxy(RuntimeEnvironment.getApplication()).enabled(true);
+        AdBypass.httpProxy = new InetSocketAddress(InetAddress.getLoopbackAddress(), server.getLocalPort());
+        AdBypass.proxiedHosts = Pattern.compile("127\\.0\\.0\\.1");
+        direct = capture + "#EXT-X-DISCONTINUITY\n" + "#EXTINF:2.000,live\nafter.ts\n".repeat(6);
+        try (ActivityController<PlayerActivity> controller = Robolectric.buildActivity(PlayerActivity.class, liveIntent())) {
+            Player main = openAndLoad(controller);
+            PlayerView view = (PlayerView) screen(controller.get()).getChildAt(0);
+            seek(main, LIVE_MS);
+            await("backup stream on screen", () -> view.getPlayer() != main);
+            assertEquals("ad session muted behind the backup", 0f, main.getVolume(), 0f);
+            assertEquals("Ad skipped. Showing a backup stream until the break ends.", ShadowToast.getTextOfLatestToast());
+            assertFalse("no cover over the backup", adNotice(controller.get()).isShown());
+            seek(main, AFTER_BREAK_MS);
+            assertSame("main stream back after the break", main, view.getPlayer());
+            assertEquals(1f, main.getVolume(), 0f);
+        }
+    }
+
+    @Test public void whenNoBackupIsAdFreeTheAdIsCoveredAndMuted() {
         new AdFreeProxy(RuntimeEnvironment.getApplication()).enabled(true);
         try (ActivityController<PlayerActivity> controller = Robolectric.buildActivity(PlayerActivity.class, liveIntent())) {
             Player player = openAndLoad(controller);
@@ -93,10 +131,13 @@ public class AdFreePlaybackTest {
                 .putExtra("stream", "{\"channel\":\"jynxzi\",\"kind\":\"live\",\"headers\":{},\"variants\":[{\"name\":\"720p60\",\"url\":\"" + url + "\"}]}");
     }
 
+    private static FrameLayout screen(PlayerActivity activity) {
+        return (FrameLayout) ((FrameLayout) activity.findViewById(android.R.id.content)).getChildAt(0);
+    }
+
     private Player openAndLoad(ActivityController<PlayerActivity> controller) {
         controller.setup();
-        FrameLayout content = controller.get().findViewById(android.R.id.content);
-        Player player = ((PlayerView) ((FrameLayout) content.getChildAt(0)).getChildAt(0)).getPlayer();
+        Player player = ((PlayerView) screen(controller.get()).getChildAt(0)).getPlayer();
         await("captured playlist loaded", () -> player.getCurrentManifest() != null);
         return player;
     }

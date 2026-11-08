@@ -36,7 +36,6 @@ import androidx.media3.common.Player;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
-import androidx.media3.exoplayer.hls.HlsManifest;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.ui.PlayerView;
 
@@ -93,14 +92,14 @@ public class PlayerActivity extends ComponentActivity {
     };
     private static final long AD_CHECK_MS = 250;
     private TextView adNotice;
+    private AdBypass adBypass;
     private final Runnable adCheck = new Runnable() {
         @Override public void run() {
             if (player == null) return;
-            long position = player.getCurrentPosition();
-            boolean ad = player.getCurrentManifest() instanceof HlsManifest manifest
-                    && StitchedAds.within(manifest.mediaPlaylist, position, position + AD_CHECK_MS);
+            boolean backup = adBypass.update();
+            boolean ad = !backup && StitchedAds.under(player, AD_CHECK_MS);
             adNotice.setVisibility(ad ? View.VISIBLE : View.GONE);
-            player.setVolume(ad ? 0f : 1f);
+            player.setVolume(ad || backup ? 0f : 1f);
             handler.postDelayed(this, AD_CHECK_MS);
         }
     };
@@ -362,8 +361,9 @@ public class PlayerActivity extends ComponentActivity {
                 headers.put(key, jsonHeaders.optString(key));
             }
         }
+        String userAgent = "SlinkTV/" + BuildConfig.VERSION_NAME + " (Android TV)";
         DefaultHttpDataSource.Factory http = new DefaultHttpDataSource.Factory()
-                .setUserAgent("SlinkTV/" + BuildConfig.VERSION_NAME + " (Android TV)")
+                .setUserAgent(userAgent)
                 .setDefaultRequestProperties(headers)
                 .setConnectTimeoutMs(15000).setReadTimeoutMs(15000);
         player = new ExoPlayer.Builder(this, new DefaultRenderersFactory(this).setEnableDecoderFallback(true))
@@ -407,7 +407,10 @@ public class PlayerActivity extends ComponentActivity {
             }
         });
         prepare();
-        if (adNotice != null) handler.post(adCheck);
+        if (adNotice != null) {
+            adBypass = new AdBypass(this, playerView, player, stream.optString("channel"), userAgent, headers, http, videoResolver);
+            handler.post(adCheck);
+        }
     }
 
     private void refreshMetadata() {
@@ -575,6 +578,7 @@ public class PlayerActivity extends ComponentActivity {
         handler.removeCallbacksAndMessages(null);
         wakeKeys.clear();
         if (receiverRegistered) { unregisterReceiver(screenState); receiverRegistered = false; }
+        if (adBypass != null) { adBypass.stop(); adBypass = null; }
         if (player != null) {
             playerView.setPlayer(null);
             player.release();
