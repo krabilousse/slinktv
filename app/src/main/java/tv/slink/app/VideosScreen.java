@@ -32,7 +32,8 @@ final class VideosScreen {
     private final AuthViewModel account;
     private final Runnable signIn;
     private final Handler main = new Handler(Looper.getMainLooper());
-    private final ExecutorService resolver = Executors.newSingleThreadExecutor();
+    private static final int PARALLEL = 8;
+    private final ExecutorService resolver = Executors.newSingleThreadExecutor(), fetchers = Executors.newFixedThreadPool(PARALLEL);
     private VideoLibrary library = new VideoLibrary();
     private TwitchApi.Snapshot snapshot;
     private String owner = "", selectedChannel = "", cursor = "", returnFocus = "";
@@ -42,24 +43,23 @@ final class VideosScreen {
     private TextView heading, status;
     private Button more, channels, refresh;
     private List<String> discovery = List.of();
-    private int limit = 10;
     private RecyclerView grid;
     private VideoCards cards;
     private AlertDialog dialog;
     private int generation, playGeneration;
-    private boolean active, busy, opening, stopped;
+    private boolean active, busy, opening;
     private long retryAfter;
 
     VideosScreen(ComponentActivity activity, AuthViewModel account, Runnable signIn) { this.activity=activity;this.account=account;this.signIn=signIn; }
     View show(TwitchApi.Snapshot data) {
-        updateAccount(data); active=true; stopped=false;
+        updateAccount(data); active=true;
         build(); resume(); return root;
     }
     void updateAccount(TwitchApi.Snapshot data) {
         String next = data == null ? "" : data.validation().optString("user_id");
         boolean changed = !owner.equals(next);
         if (changed) {
-            hide(); owner=next; library=new VideoLibrary(); selectedChannel=""; channelVideos.clear(); cursor=""; returnFocus=""; limit=10; discovery=List.of(); retryAfter=0;
+            hide(); owner=next; library=new VideoLibrary(); selectedChannel=""; channelVideos.clear(); cursor=""; returnFocus=""; discovery=List.of(); retryAfter=0;
         }
         if (snapshot != data) { generation++; busy=false; }
         snapshot=data;
@@ -87,11 +87,10 @@ final class VideosScreen {
         channels=button("Channels",v->chooseChannel());row.addView(channels);
         refresh=button("Refresh",v->{
             if (busy) return;
-            stopped=false;limit=10;
             if (!selectedChannel.isEmpty()) loadChannel(false);
             else { generation++;busy=false;library.invalidate();status.setText("Refreshing follows…");account.refreshData(); }
         });row.addView(refresh);
-        more=button("Load more",v->{ if(!busy) {stopped=false;if(selectedChannel.isEmpty()){limit+=10;if(library.liveKnown(System.currentTimeMillis()))scan();else refreshLive();}else loadChannel(true);} });row.addView(more);
+        more=button("Older videos",v->{ if(!busy) loadChannel(true); });row.addView(more);
         root.addView(row,new LinearLayout.LayoutParams(-1,dp(42)));
         status=TvUi.text(activity,"",12,TvUi.MUTED);status.setMaxLines(1);status.setEllipsize(android.text.TextUtils.TruncateAt.END);status.setPadding(dp(6),0,0,0);
         root.addView(status,new LinearLayout.LayoutParams(-1,dp(18)));
@@ -107,7 +106,7 @@ final class VideosScreen {
         if (!library.liveKnown(System.currentTimeMillis())) refreshLive(); else scan();
     }
     void hide() { active=false;generation++;busy=false;main.removeCallbacksAndMessages(null);cancelOpening();if(dialog!=null)dialog.dismiss(); }
-    void destroy() { hide();resolver.shutdownNow(); }
+    void destroy() { hide();resolver.shutdownNow();fetchers.shutdownNow(); }
     boolean back() {
         if(opening){cancelOpening();return true;}
         if(!selectedChannel.isEmpty()){generation++;busy=false;selectedChannel="";channelVideos.clear();cursor="";heading.setText("Videos");publish();resume();return true;}
@@ -116,7 +115,7 @@ final class VideosScreen {
     private void refreshLive() {
         if (!active||busy||owner.isEmpty())return;
         busy=true;int request=generation;String user=owner;
-        if(library.recent(false,System.currentTimeMillis()).isEmpty())cards.loading();status.setText("Checking followed channels…");more.setEnabled(false);
+        if(library.recent(false,System.currentTimeMillis()).isEmpty())cards.loading();status.setText("Checking followed channels…");
         account.request((api,session)->api.liveFollowedIds(session,user),(live,error)->{
             if(!active||request!=generation)return;busy=false;
             if(error==null){
@@ -133,44 +132,54 @@ final class VideosScreen {
     private Lookup lookup(TwitchApi api,TwitchApi.Session session,String channel,String cursor,int count) throws Exception {
         try{return new Lookup(api.videos(session,channel,cursor,count),null,200,0);}
         catch(TwitchApi.ApiException error){if(error.status==401)throw error;return new Lookup(null,error.getMessage(),error.status,error.retrySeconds);}
-    }
-    private String nextChannel() {
-        long now=System.currentTimeMillis();
-        for(String id:discovery.subList(0,Math.min(limit,discovery.size())))
-            if(library.offline(id,now)&&!library.fresh(id,now))return id;
-        return null;
+        catch(Exception error){return new Lookup(null,"Request failed",0,0);}
     }
     private void scan() {
-        if(!active||busy||stopped||owner.isEmpty()||!selectedChannel.isEmpty())return;
-        if(System.currentTimeMillis()<retryAfter){status.setText("Twitch rate limit. Retry in "+Math.max(1,(retryAfter-System.currentTimeMillis())/1000)+"s.");return;}
-        String next=nextChannel();
-        if(next==null){publish();return;}
+        if(!active||busy||owner.isEmpty()||!selectedChannel.isEmpty())return;
+        long now=System.currentTimeMillis();
+        List<String> stale=discovery.stream().filter(id->library.offline(id,now)&&!library.fresh(id,now)).toList();
+        List<String> batch=stale.subList(0,Math.min(PARALLEL,stale.size()));
+        // While the cursor is on the cards they move once, when the whole pass is in.
+        if(batch.isEmpty()||now<retryAfter||!grid.hasFocus())publish();
+        if(batch.isEmpty())return;
+        if(now<retryAfter){
+            status.setText("Twitch rate limit · resuming in "+Math.max(1,(retryAfter-now)/1000)+"s");
+            main.removeCallbacksAndMessages(null);main.postDelayed(this::resume,retryAfter-now);return;
+        }
         busy=true;int request=generation;
-        if(library.recent(false,System.currentTimeMillis()).isEmpty())cards.loading();more.setEnabled(false);
-        status.setText("Loading videos · "+Math.min(limit,discovery.size())+" offline followed channels");
-        account.request((api,session)->lookup(api,session,next,"",1),(result,error)->{
+        if(library.recent(false,now).isEmpty())cards.loading();
+        status.setText("Refreshing videos · "+(discovery.size()-stale.size())+" / "+discovery.size()+" channels");
+        account.request((api,session)->{
+            List<java.util.concurrent.Callable<Lookup>> calls=new ArrayList<>();
+            for(String id:batch)calls.add(()->lookup(api,session,id,"",1));
+            List<Lookup> results=new ArrayList<>();
+            try{for(var call:fetchers.invokeAll(calls))results.add(call.get());}
+            catch(java.util.concurrent.ExecutionException failure){throw failure.getCause() instanceof Exception cause?cause:failure;}
+            return results;
+        },(results,error)->{
             if(!active||request!=generation)return;busy=false;
-            long now=System.currentTimeMillis();
-            if(error==null&&result.error()==null)library.store(next,result.page().items(),now);
-            else library.failed(next,now);
-            if(result!=null&&result.status()==429){retryAfter=now+Math.max(60,result.retrySeconds())*1000L;stopped=true;}
-            publish();
-            if(stopped){status.setText("Twitch rate limit. Wait, then Load more.");return;}
-            main.post(this::scan);
+            long done=System.currentTimeMillis();boolean reached=false;
+            for(int i=0;i<batch.size();i++){
+                Lookup result=results==null?null:results.get(i);
+                if(result!=null&&result.error()==null){library.store(batch.get(i),result.page().items(),done);reached=true;}
+                // A rate-limited channel stays stale, so the pass picks it up again after the wait.
+                else if(result!=null&&result.status()==429)retryAfter=Math.max(retryAfter,done+Math.max(60,result.retrySeconds())*1000L);
+                else library.failed(batch.get(i),done);
+            }
+            if(!reached&&done>=retryAfter){publish();status.setText("Could not load videos. Refresh to retry.");return;}
+            scan();
         });
     }
     private void publish() {
         if(cards==null||owner.isEmpty())return;
         String focused=cards.focused();boolean hadFocus=grid.hasFocus();
-        Set<String> visible=Set.copyOf(discovery.subList(0,Math.min(limit,discovery.size())));
-        List<VideoItem> result=selectedChannel.isEmpty()?library.recent(true,System.currentTimeMillis()).stream().filter(item->visible.contains(item.channelId())).toList():List.copyOf(channelVideos);
+        List<VideoItem> result=selectedChannel.isEmpty()?library.recent(true,System.currentTimeMillis()):List.copyOf(channelVideos);
         cards.submit(result);
-        more.setText(selectedChannel.isEmpty()?"Load more":"Older videos");
-        more.setEnabled(!busy&&(selectedChannel.isEmpty()?stopped||limit<discovery.size()||nextChannel()!=null:!cursor.isEmpty()));
+        more.setVisibility(selectedChannel.isEmpty()?View.GONE:View.VISIBLE);more.setEnabled(!busy&&!cursor.isEmpty());
         if(selectedChannel.isEmpty()){
             heading.setText("Videos");channels.setText("Channels");
             status.setText(library.channels.isEmpty()?"No followed channels.":
-                    (result.isEmpty()?"No archived broadcasts found · ":"")+"Offline followed · "+Math.min(limit,discovery.size())+" / "+discovery.size()+" channels"
+                    (result.isEmpty()?"No archived broadcasts found · ":"")+"Offline followed · "+discovery.size()+" channels"
                     +(library.failureCount()>0?" · "+library.failureCount()+" unavailable":""));
         }else {
             VideoLibrary.Channel channel=library.channels.get(selectedChannel);
