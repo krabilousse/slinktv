@@ -3,6 +3,10 @@ package tv.slink.app;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.drawable.ClipDrawable;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -63,15 +67,18 @@ final class VideoCards extends RecyclerView.Adapter<VideoCards.Holder> {
         card.addView(preview,new LinearLayout.LayoutParams(-1,Math.round((width-TvUi.dp(c,18))*8.3f/16)));
         ImageView image = new ImageView(c); image.setScaleType(ImageView.ScaleType.CENTER_CROP); preview.addView(image,new FrameLayout.LayoutParams(-1,-1));
         TextView duration = TvUi.text(c,"",11,Color.WHITE); duration.setPadding(TvUi.dp(c,6),TvUi.dp(c,3),TvUi.dp(c,6),TvUi.dp(c,3)); duration.setBackground(TvUi.shape(c,0xDD0A0F15,4));
-        FrameLayout.LayoutParams stamp = new FrameLayout.LayoutParams(-2,-2,Gravity.BOTTOM|Gravity.END); stamp.setMargins(0,0,TvUi.dp(c,6),TvUi.dp(c,6)); preview.addView(duration,stamp);
+        FrameLayout.LayoutParams stamp = new FrameLayout.LayoutParams(-2,-2,Gravity.BOTTOM|Gravity.END); stamp.setMargins(0,0,TvUi.dp(c,6),TvUi.dp(c,10)); preview.addView(duration,stamp);
         ProgressBar opening = new ProgressBar(c); opening.setIndeterminateTintList(ColorStateList.valueOf(TvUi.ACCENT)); preview.addView(opening,new FrameLayout.LayoutParams(TvUi.dp(c,32),TvUi.dp(c,32),Gravity.CENTER));
         TextView name = line(c,15), title = line(c,13), details = line(c,11);
         name.setPadding(0,TvUi.dp(c,4),0,0); name.setTypeface(null,android.graphics.Typeface.BOLD);
         card.addView(name,new LinearLayout.LayoutParams(-1,TvUi.dp(c,22))); card.addView(title,new LinearLayout.LayoutParams(-1,TvUi.dp(c,18)));
         details.setTextColor(Color.WHITE);details.setPadding(TvUi.dp(c,5),TvUi.dp(c,3),TvUi.dp(c,5),TvUi.dp(c,3));
         FrameLayout.LayoutParams facts = new FrameLayout.LayoutParams(-2,-2,Gravity.BOTTOM|Gravity.START);
-        facts.setMargins(TvUi.dp(c,6),0,TvUi.dp(c,76),TvUi.dp(c,6));preview.addView(details,facts);
-        ProgressBar resume = new ProgressBar(c,null,android.R.attr.progressBarStyleHorizontal); resume.setMax(1000); resume.setProgressTintList(ColorStateList.valueOf(TvUi.ACCENT)); card.addView(resume,new LinearLayout.LayoutParams(-1,TvUi.dp(c,2)));
+        facts.setMargins(TvUi.dp(c,6),0,TvUi.dp(c,76),TvUi.dp(c,10));preview.addView(details,facts);
+        ProgressBar resume = new ProgressBar(c,null,android.R.attr.progressBarStyleHorizontal); resume.setMax(1000);
+        LayerDrawable bar = new LayerDrawable(new Drawable[]{new ColorDrawable(0xCC0A0F15),new ClipDrawable(new ColorDrawable(TvUi.ACCENT),Gravity.START,ClipDrawable.HORIZONTAL)});
+        bar.setId(0,android.R.id.background); bar.setId(1,android.R.id.progress); resume.setProgressDrawable(bar);
+        preview.addView(resume,new FrameLayout.LayoutParams(-1,TvUi.dp(c,5),Gravity.BOTTOM));
         return new Holder(card,image,duration,name,title,details,opening,resume);
     }
     private TextView line(Context c,int size) { TextView t=TvUi.text(c,"",size,size==15?Color.WHITE:TvUi.MUTED); t.setMaxLines(1); t.setEllipsize(TextUtils.TruncateAt.END);return t; }
@@ -89,10 +96,10 @@ final class VideoCards extends RecyclerView.Adapter<VideoCards.Holder> {
         if (!item.thumbnail().isEmpty()) Glide.with(h.image).load(item.thumbnail()).centerCrop().into(h.image);
         h.name.setText(item.name()); h.title.setText(item.title()); h.duration.setVisibility(View.VISIBLE); h.duration.setText(VideoItem.clock(item.duration()));
         h.details.setText(item.age(now)+" · "+library.channelState(item.channelId(),now));
-        h.itemView.setContentDescription(item.name()+", "+item.title()+", "+item.age(now)+", "+VideoItem.clock(item.duration()));
         h.opening.setVisibility(item.id().equals(opening)?View.VISIBLE:View.GONE);
-        long saved=progress.position(owner,item.id());
-        if (saved>0&&item.duration()>0) { h.resume.setVisibility(View.VISIBLE);h.resume.setProgress((int)Math.min(1000,saved*1000/item.duration())); }
+        long saved=progress.position(owner,item.id()); int watched=saved>0&&item.duration()>0?(int)Math.min(1000,saved*1000/item.duration()):0;
+        if (watched>0) { h.resume.setVisibility(View.VISIBLE);h.resume.setProgress(watched); }
+        h.itemView.setContentDescription(item.name()+", "+item.title()+", "+item.age(now)+", "+VideoItem.clock(item.duration())+(watched>0?", "+watched/10+"% watched":""));
         h.itemView.setOnClickListener(v->open.accept(item));h.itemView.setOnLongClickListener(v->{channel.accept(item);return true;});
         h.itemView.setOnFocusChangeListener((v,focused)->{if(focused){this.focused=item.id();focus.accept(item);}});
     }

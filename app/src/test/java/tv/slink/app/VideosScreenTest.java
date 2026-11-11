@@ -140,6 +140,8 @@ public class VideosScreenTest {
         try(var activity=Robolectric.buildActivity(ComponentActivity.class).setup()){
             VideosScreen screen=new VideosScreen(activity.get(),account,()->{});
             try{
+                VideoProgress progress=new VideoProgress(activity.get());
+                progress.save("42","201",45_201_000,90_402_000,true);progress.save("42","401",9_040_200,90_402_000,true);
                 View content=screen.show(((AuthViewModel.Ready)account.state().getValue()).snapshot());
                 FrameLayout root=new FrameLayout(activity.get());root.setBackgroundColor(TvUi.BACKGROUND);root.setPadding(64,32,64,16);root.addView(content);activity.get().setContentView(root);
                 await(()->grid(root).getAdapter().getItemCount()==6);
@@ -151,6 +153,11 @@ public class VideosScreenTest {
                     assertTrue(holder.itemView.getBottom()<=cards.getHeight());
                 }
                 assertTrue(VideoFeatureTest.button(root,"Refresh").getRight()<=((View)VideoFeatureTest.button(root,"Refresh").getParent()).getWidth());
+                var half=(VideoCards.Holder)cards.getChildViewHolder(cards.getChildAt(1));
+                assertEquals(View.VISIBLE,half.resume.getVisibility());assertEquals(500,half.resume.getProgress());
+                assertSame(half.image.getParent(),half.resume.getParent());assertTrue(half.resume.getHeight()>=TvUi.dp(activity.get(),4));
+                assertTrue(half.itemView.getContentDescription().toString().endsWith("50% watched"));
+                assertEquals(View.INVISIBLE,((VideoCards.Holder)cards.getChildViewHolder(cards.getChildAt(0))).resume.getVisibility());
                 cards.getChildAt(1).requestFocus();long id=cards.getChildViewHolder(cards.getChildAt(1)).getItemId();
                 screen.hide();screen.resume();layout(root);
                 assertEquals(id,cards.getChildViewHolder(cards.getFocusedChild()).getItemId());
