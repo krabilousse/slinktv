@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0] - 2026-11-11
+
+- Videos now checks every offline followed channel, eight at a time, instead of one at a time for the first ten. "Load more" is gone from the main view; "Older videos" remains inside a channel.
+- Cards no longer move while you navigate them. Once a card is focused, new results are added in one step when the refresh is complete. The status line shows the progress.
+- After a Twitch rate limit, the refresh waits and resumes by itself.
+
+## [0.9.0] - 2026-11-09
+
+- The ad-free proxy now handles ads that Twitch still inserts into a live stream. During the break, the player shows a backup stream until the break ends, as Xtra does. It tries the same playlist through Xtra's HTTP proxy first, then a fresh Android session at up to 360p.
+- If no backup stream is ad-free, the player hides and mutes the ad until live video returns.
+- The ad-free proxy dialog explains what happens when an ad still gets through.
+
 ## [0.8.0] - 2026-11-08
 
 - Add an optional ad-free proxy (Settings → Ad-free proxy), off by default. It fetches live stream playlists through the same community servers as Xtra; video still comes from Twitch.
