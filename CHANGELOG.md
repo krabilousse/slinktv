@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.10.1] - 2026-11-11
+
+- When videos arrive above the focused card during a refresh, a button in the Videos header shows how many, for example "↑ 11 new · press Back". Press Back, or select the button, to jump to the first card.
+- While the button is showing, the first Back jumps to the top and the second leaves Videos. The button goes away once you move above the new videos.
+
 ## [0.10.0] - 2026-11-11
 
 - Videos now checks every offline followed channel, eight at a time, instead of one at a time for the first ten. "Load more" is gone from the main view; "Older videos" remains inside a channel.

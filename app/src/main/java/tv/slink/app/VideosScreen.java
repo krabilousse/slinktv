@@ -41,8 +41,10 @@ final class VideosScreen {
     private final Set<String> cursors = new java.util.HashSet<>();
     private LinearLayout root;
     private TextView heading, status;
-    private Button more, channels, refresh;
+    private Button more, channels, refresh, newer;
     private List<String> discovery = List.of();
+    private List<VideoItem> shown = List.of();
+    private final Set<String> fresh = new java.util.HashSet<>();
     private RecyclerView grid;
     private VideoCards cards;
     private AlertDialog dialog;
@@ -75,8 +77,9 @@ final class VideosScreen {
     private Button button(String label, View.OnClickListener action) { Button button=TvUi.button(activity,label,action);button.setTextSize(14);button.setMinHeight(dp(40));button.setPadding(dp(14),dp(4),dp(14),dp(4));return button; }
     private void build() {
         if (root==null) root=column(); else root.removeAllViews();
+        shown=List.of();fresh.clear();
         if (owner.isEmpty()) {
-            cards=null;grid=null;
+            cards=null;grid=null;newer=null;
             TextView title=TvUi.text(activity,"Videos",24,Color.WHITE);title.setPadding(dp(6),dp(12),0,dp(16));root.addView(title);
             root.addView(TvUi.text(activity,"Sign in to see videos from channels you follow.",18,TvUi.MUTED));
             Button login=button("Sign in with QR",v->signIn.run());root.addView(login);return;
@@ -84,6 +87,7 @@ final class VideosScreen {
         LinearLayout row=new LinearLayout(activity);row.setGravity(Gravity.CENTER_VERTICAL);
         heading=TvUi.text(activity,"Videos",22,Color.WHITE);heading.setMaxLines(1);heading.setMaxWidth(dp(230));heading.setEllipsize(android.text.TextUtils.TruncateAt.END);heading.setPadding(dp(6),0,dp(16),0);row.addView(heading);
         row.addView(new View(activity),new LinearLayout.LayoutParams(0,1,1));
+        newer=button("",v->top());newer.setSelected(true);newer.setVisibility(View.GONE);row.addView(newer);
         channels=button("Channels",v->chooseChannel());row.addView(channels);
         refresh=button("Refresh",v->{
             if (busy) return;
@@ -95,7 +99,7 @@ final class VideosScreen {
         status=TvUi.text(activity,"",12,TvUi.MUTED);status.setMaxLines(1);status.setEllipsize(android.text.TextUtils.TruncateAt.END);status.setPadding(dp(6),0,0,0);
         root.addView(status,new LinearLayout.LayoutParams(-1,dp(18)));
         grid=new RecyclerView(activity);grid.setLayoutManager(new GridLayoutManager(activity,3));grid.setItemAnimator(null);grid.setHasFixedSize(true);grid.setClipToPadding(false);
-        cards=new VideoCards(activity,owner,library,this::play,item->openChannel(item.channelId()));grid.setAdapter(cards);
+        cards=new VideoCards(activity,owner,library,this::play,item->openChannel(item.channelId()),item->announce(item.id()));grid.setAdapter(cards);
         root.addView(grid,new LinearLayout.LayoutParams(-1,0,1));
         publish();
     }
@@ -110,6 +114,7 @@ final class VideosScreen {
     boolean back() {
         if(opening){cancelOpening();return true;}
         if(!selectedChannel.isEmpty()){generation++;busy=false;selectedChannel="";channelVideos.clear();cursor="";heading.setText("Videos");publish();resume();return true;}
+        if(newer!=null&&newer.getVisibility()==View.VISIBLE){top();return true;}
         return false;
     }
     private void refreshLive() {
@@ -177,6 +182,10 @@ final class VideosScreen {
         cards.submit(result);
         more.setVisibility(selectedChannel.isEmpty()?View.GONE:View.VISIBLE);more.setEnabled(!busy&&!cursor.isEmpty());
         if(selectedChannel.isEmpty()){
+            // Videos that arrived above the cursor are out of sight, so they are counted on a button.
+            Set<String> known=shown.stream().map(VideoItem::id).collect(java.util.stream.Collectors.toSet());
+            if(hadFocus)for(VideoItem item:result){if(item.id().equals(focused))break;if(!known.contains(item.id()))fresh.add(item.id());}
+            shown=result;announce(focused);
             heading.setText("Videos");channels.setText("Channels");
             status.setText(library.channels.isEmpty()?"No followed channels.":
                     (result.isEmpty()?"No archived broadcasts found · ":"")+"Offline followed · "+discovery.size()+" channels"
@@ -188,6 +197,13 @@ final class VideosScreen {
         }
         if(hadFocus&&!focused.isEmpty())restoreFocus(focused);
     }
+    private void announce(String id) {
+        List<String> ids=shown.stream().map(VideoItem::id).toList();
+        long above=ids.subList(0,Math.max(0,ids.indexOf(id))).stream().filter(fresh::contains).count();
+        if(above==0)fresh.clear();
+        newer.setText("↑ "+above+" new · press Back");newer.setVisibility(above>0?View.VISIBLE:View.GONE);
+    }
+    private void top() { fresh.clear();newer.setVisibility(View.GONE);if(!shown.isEmpty())restoreFocus(shown.get(0).id()); }
     private void restoreFocus(String id) {
         int position=cards.index(id);if(position<0)return;RecyclerView target=grid;grid.scrollToPosition(position);
         grid.getViewTreeObserver().addOnPreDrawListener(new android.view.ViewTreeObserver.OnPreDrawListener(){
@@ -213,7 +229,7 @@ final class VideosScreen {
     }
     private void openChannel(String id) {
         if(!library.channels.containsKey(id))return;
-        cancelOpening();generation++;busy=false;selectedChannel=id;cursor="";channelVideos.clear();cursors.clear();
+        cancelOpening();generation++;busy=false;selectedChannel=id;cursor="";channelVideos.clear();cursors.clear();fresh.clear();newer.setVisibility(View.GONE);
         heading.setText(library.channels.get(id).name());channels.setText("Channels");loadChannel(false);
     }
     private void loadChannel(boolean append) {

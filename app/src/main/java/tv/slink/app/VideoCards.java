@@ -22,15 +22,15 @@ import java.util.function.Consumer;
 
 final class VideoCards extends RecyclerView.Adapter<VideoCards.Holder> {
     private List<VideoItem> items = List.of();
-    private final Consumer<VideoItem> open, channel;
+    private final Consumer<VideoItem> open, channel, focus;
     private final VideoProgress progress;
     private final VideoLibrary library;
     private final String owner;
     private boolean loading;
     private long liveRevision;
     private String opening = "", focused = "";
-    VideoCards(Context context, String owner, VideoLibrary library, Consumer<VideoItem> open, Consumer<VideoItem> channel) {
-        this.owner = owner; this.library = library; this.open = open; this.channel = channel; progress = new VideoProgress(context);
+    VideoCards(Context context, String owner, VideoLibrary library, Consumer<VideoItem> open, Consumer<VideoItem> channel, Consumer<VideoItem> focus) {
+        this.owner = owner; this.library = library; this.open = open; this.channel = channel; this.focus = focus; progress = new VideoProgress(context);
         setHasStableIds(true);
     }
     void loading() { loading = true; items = List.of(); notifyDataSetChanged(); }
@@ -94,7 +94,7 @@ final class VideoCards extends RecyclerView.Adapter<VideoCards.Holder> {
         long saved=progress.position(owner,item.id());
         if (saved>0&&item.duration()>0) { h.resume.setVisibility(View.VISIBLE);h.resume.setProgress((int)Math.min(1000,saved*1000/item.duration())); }
         h.itemView.setOnClickListener(v->open.accept(item));h.itemView.setOnLongClickListener(v->{channel.accept(item);return true;});
-        h.itemView.setOnFocusChangeListener((v,focused)->{if(focused)this.focused=item.id();});
+        h.itemView.setOnFocusChangeListener((v,focused)->{if(focused){this.focused=item.id();focus.accept(item);}});
     }
     @Override public void onViewRecycled(@NonNull Holder h) { Glide.with(h.image).clear(h.image); }
     static final class Holder extends RecyclerView.ViewHolder {
