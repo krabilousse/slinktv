@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.10.2] - 2026-11-11
+
+- Video cards show how far you watched as a bar across the bottom of the thumbnail. It replaces the thin line under the title, which was easy to miss.
+- The bar appears once you are more than 10 seconds into a video and goes away when you finish it. Positions are saved on this TV only.
+
 ## [0.10.1] - 2026-11-11
 
 - When videos arrive above the focused card during a refresh, a button in the Videos header shows how many, for example "↑ 11 new · press Back". Press Back, or select the button, to jump to the first card.
