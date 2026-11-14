@@ -283,4 +283,13 @@ public class StreamWallTest {
         assertTrue(http.requests.get(0).url().contains("after=page%2B1"));
         assertTrue(http.requests.get(1).url().contains("user_id=42"));
     }
+
+    @Test public void viewerCountComesFromTheLiveStreamOrReportsOffline() throws Exception {
+        TwitchApiTest.FakeHttp http = new TwitchApiTest.FakeHttp()
+                .reply(200, "{\"data\":[{\"user_id\":\"42\",\"viewer_count\":9}]}").reply(200, "{\"data\":[]}");
+        TwitchApi api = new TwitchApi(http); TwitchApi.Session session = new TwitchApi.Session("client", "token", "refresh", 0);
+        assertEquals(9, api.viewers(session, "42"));
+        assertTrue(http.requests.get(0).url().endsWith("/streams?user_id=42"));
+        assertEquals(-1, api.viewers(session, "42"));
+    }
 }

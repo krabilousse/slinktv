@@ -144,4 +144,14 @@ public class PlayerActivityTest {
             assertEquals(720, PlaybackQuality.preference(controller.get()));
         }
     }
+
+    @Test public void livePlayerShowsTheViewerCount() throws Exception {
+        try (ActivityController<PlayerActivity> controller = Robolectric.buildActivity(PlayerActivity.class,
+                streamIntent().putExtra("game_name", "Zelda").putExtra("viewer_count", 1234L))) {
+            controller.create();
+            var field = PlayerActivity.class.getDeclaredField("metadata"); field.setAccessible(true);
+            String shown = ((android.widget.TextView) field.get(controller.get())).getText().toString();
+            assertTrue(shown, shown.startsWith("Zelda  ·  1,234 viewers  ·  "));
+        }
+    }
 }
