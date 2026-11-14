@@ -109,6 +109,16 @@ public class PlayerActivity extends ComponentActivity {
             if (resumed) handler.postDelayed(this, 15_000);
         }
     };
+    private long viewers = -1;
+    private final Runnable viewerRefresh = new Runnable() {
+        @Override public void run() {
+            // shortcut: guests keep the count from the stream wall, add a guest lookup if it needs to stay current
+            ((SlinkApplication) getApplication()).account().requestChat((api, session) -> api.viewers(session, extra("broadcaster_id")), (count, error) -> {
+                if (error == null) { viewers = count; refreshMetadata(); }
+            });
+            if (resumed) handler.postDelayed(this, 60_000);
+        }
+    };
     private final BroadcastReceiver screenState = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
             if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
@@ -130,6 +140,7 @@ public class PlayerActivity extends ComponentActivity {
             return;
         }
         vod = "vod".equals(stream.optString("kind")) || getIntent().getBooleanExtra("recorded_sample", false);
+        if (!vod) viewers = getIntent().getLongExtra("viewer_count", -1);
         videoProgress = new VideoProgress(this);
         resumePosition = savedState != null ? savedState.getLong("video_position") : videoProgress.position(extra("account_id"), extra("vod_id"));
         if (savedState != null) vodPlayWhenReady = savedState.getBoolean("video_playing", true);
@@ -415,7 +426,9 @@ public class PlayerActivity extends ComponentActivity {
 
     private void refreshMetadata() {
         String game = extra("game_name");
-        metadata.setText((game.isEmpty() ? "" : game + "  ·  ") + PlaybackQuality.label(variants, quality));
+        metadata.setText((game.isEmpty() ? "" : game + "  ·  ")
+                + (viewers < 0 ? "" : java.text.NumberFormat.getIntegerInstance().format(viewers) + " viewers  ·  ")
+                + PlaybackQuality.label(variants, quality));
     }
 
     private void prepare() {
@@ -548,6 +561,7 @@ public class PlayerActivity extends ComponentActivity {
         handler.postDelayed(checkpoint, 15_000);
         if (controls != null) scheduleHide();
         if (vod) handler.post(progressTick);
+        else if (controls != null && !extra("broadcaster_id").isEmpty()) handler.post(viewerRefresh);
     }
 
     @Override protected void onPause() {
@@ -556,7 +570,7 @@ public class PlayerActivity extends ComponentActivity {
         saveVideoProgress(); handler.removeCallbacks(progressTick);
         if (chat != null) chat.setActive(false);
         if (watchTracker != null) watchTracker.stop();
-        handler.removeCallbacks(checkpoint);
+        handler.removeCallbacks(checkpoint); handler.removeCallbacks(viewerRefresh);
         handler.removeCallbacks(hideControls);
         super.onPause();
     }

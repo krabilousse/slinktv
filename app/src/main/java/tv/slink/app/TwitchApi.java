@@ -214,6 +214,12 @@ final class TwitchApi {
         return false;
     }
 
+    /** Current viewer count, or -1 when the channel is not live. */
+    long viewers(Session session, String channel) throws Exception {
+        JSONArray live = get(session, "streams?user_id=" + encode(channel)).getJSONArray("data");
+        return live.length() == 0 ? -1 : live.getJSONObject(0).optLong("viewer_count", -1);
+    }
+
     String channelId(Session session, String login) throws Exception {
         JSONArray users = get(session, "users?login=" + encode(login)).getJSONArray("data");
         if (users.length() == 0) throw new ApiException(404, "Channel not found.");
