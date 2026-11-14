@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.11.0] - 2026-11-14
+
+- The live player shows the number of viewers next to the game and quality.
+- When you are signed in, the count updates every minute. As a guest, it stays at the number shown when you opened the stream.
+
 ## [0.10.2] - 2026-11-11
 
 - Video cards show how far you watched as a bar across the bottom of the thumbnail. It replaces the thin line under the title, which was easy to miss.
